@@ -1,0 +1,1 @@
+rtl/sync_ram.v:24: warning: Use of SystemVerilog [size] dimension. Use at least -g2005-sv to remove this warning.

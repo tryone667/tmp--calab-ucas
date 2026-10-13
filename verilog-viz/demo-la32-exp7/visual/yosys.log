@@ -1,0 +1,617 @@
+
+ /----------------------------------------------------------------------------\
+ |  yosys -- Yosys Open SYnthesis Suite                                       |
+ |  Copyright (C) 2012 - 2026  Claire Xenia Wolf <claire@yosyshq.com>         |
+ |  Distributed under an ISC-like license, type "license" to see terms        |
+ \----------------------------------------------------------------------------/
+ Yosys 0.69 (git sha1 9f75ca1f9, Release, Clang /workspace/YoWASP/yosys/wasi-sdk-33.0-x86_64-linux/share/cmake/../..//bin/clang++ 22.1.0)
+
+-- Running command `read_verilog alu.v bridge_1x2.v clk_pll.v confreg.v mycpu_top.v regfile.v soc_lite_top.v sync_ram.v tools.v; hierarchy -top soc_lite_top -chparam SIMULATION 1; proc; memory_collect; write_json C:/course_files/verilog-viz/demo-la32-exp7/visual/rtl.json' --
+
+1. Executing Verilog-2005 frontend: alu.v
+Parsing Verilog input from `alu.v' to AST representation.
+Generating RTLIL representation for module `\alu'.
+Successfully finished Verilog frontend.
+
+2. Executing Verilog-2005 frontend: bridge_1x2.v
+Parsing Verilog input from `bridge_1x2.v' to AST representation.
+Generating RTLIL representation for module `\bridge_1x2'.
+Successfully finished Verilog frontend.
+
+3. Executing Verilog-2005 frontend: clk_pll.v
+Parsing Verilog input from `clk_pll.v' to AST representation.
+Generating RTLIL representation for module `\clk_pll'.
+Successfully finished Verilog frontend.
+
+4. Executing Verilog-2005 frontend: confreg.v
+Parsing Verilog input from `confreg.v' to AST representation.
+Generating RTLIL representation for module `\confreg'.
+Successfully finished Verilog frontend.
+
+5. Executing Verilog-2005 frontend: mycpu_top.v
+Parsing Verilog input from `mycpu_top.v' to AST representation.
+Generating RTLIL representation for module `\mycpu_top'.
+Successfully finished Verilog frontend.
+
+6. Executing Verilog-2005 frontend: regfile.v
+Parsing Verilog input from `regfile.v' to AST representation.
+Generating RTLIL representation for module `\regfile'.
+Successfully finished Verilog frontend.
+
+7. Executing Verilog-2005 frontend: soc_lite_top.v
+Parsing Verilog input from `soc_lite_top.v' to AST representation.
+Generating RTLIL representation for module `\soc_lite_top'.
+Successfully finished Verilog frontend.
+
+8. Executing Verilog-2005 frontend: sync_ram.v
+Parsing Verilog input from `sync_ram.v' to AST representation.
+Generating RTLIL representation for module `\sync_ram'.
+Generating RTLIL representation for module `\inst_ram'.
+Generating RTLIL representation for module `\data_ram'.
+Successfully finished Verilog frontend.
+
+9. Executing Verilog-2005 frontend: tools.v
+Parsing Verilog input from `tools.v' to AST representation.
+Generating RTLIL representation for module `\decoder_2_4'.
+Generating RTLIL representation for module `\decoder_4_16'.
+Generating RTLIL representation for module `\decoder_5_32'.
+Generating RTLIL representation for module `\decoder_6_64'.
+Successfully finished Verilog frontend.
+
+10. Executing HIERARCHY pass (managing design hierarchy).
+Parameter \SIMULATION = 1
+
+11. Executing AST frontend in derive mode using pre-parsed AST for module `\soc_lite_top'.
+Parameter \SIMULATION = 1
+Generating RTLIL representation for module `$paramod\soc_lite_top\SIMULATION=s32'00000000000000000000000000000001'.
+
+11.1. Analyzing design hierarchy..
+Top module:  \soc_lite_top
+Used module:     \mycpu_top
+Used module:         \alu
+Used module:         \regfile
+Used module:         \decoder_5_32
+Used module:         \decoder_2_4
+Used module:         \decoder_4_16
+Used module:         \decoder_6_64
+Used module:     \inst_ram
+Used module:         \sync_ram
+Used module:     \bridge_1x2
+Used module:     \data_ram
+Used module:     \confreg
+Parameter \SIMULATION = 1
+
+11.2. Executing AST frontend in derive mode using pre-parsed AST for module `\confreg'.
+Parameter \SIMULATION = 1
+Generating RTLIL representation for module `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001'.
+Parameter \ADDR_WIDTH = 18
+Parameter \DATA_WIDTH = 32
+Parameter \DEPTH = 262144
+
+11.3. Executing AST frontend in derive mode using pre-parsed AST for module `\sync_ram'.
+Parameter \ADDR_WIDTH = 18
+Parameter \DATA_WIDTH = 32
+Parameter \DEPTH = 262144
+Generating RTLIL representation for module `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram'.
+Parameter \ADDR_WIDTH = 16
+Parameter \DATA_WIDTH = 32
+Parameter \DEPTH = 65536
+
+11.4. Executing AST frontend in derive mode using pre-parsed AST for module `\sync_ram'.
+Parameter \ADDR_WIDTH = 16
+Parameter \DATA_WIDTH = 32
+Parameter \DEPTH = 65536
+Generating RTLIL representation for module `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram'.
+
+11.5. Analyzing design hierarchy..
+Top module:  \soc_lite_top
+Used module:     \mycpu_top
+Used module:         \alu
+Used module:         \regfile
+Used module:         \decoder_5_32
+Used module:         \decoder_2_4
+Used module:         \decoder_4_16
+Used module:         \decoder_6_64
+Used module:     \inst_ram
+Used module:         $paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram
+Used module:     \bridge_1x2
+Used module:     \data_ram
+Used module:         $paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram
+Used module:     $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001
+
+11.6. Analyzing design hierarchy..
+Top module:  \soc_lite_top
+Used module:     \mycpu_top
+Used module:         \alu
+Used module:         \regfile
+Used module:         \decoder_5_32
+Used module:         \decoder_2_4
+Used module:         \decoder_4_16
+Used module:         \decoder_6_64
+Used module:     \inst_ram
+Used module:         $paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram
+Used module:     \bridge_1x2
+Used module:     \data_ram
+Used module:         $paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram
+Used module:     $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001
+Removing unused module `\sync_ram'.
+Removing unused module `$paramod\soc_lite_top\SIMULATION=s32'00000000000000000000000000000001'.
+Removing unused module `\confreg'.
+Removing unused module `\clk_pll'.
+Removed 4 unused modules.
+
+12. Executing PROC pass (convert processes to netlists).
+
+12.1. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Cleaned up 0 empty switches.
+
+12.2. Executing PROC_RMDEAD pass (remove dead branches from decision trees).
+Marked 1 switch rules as full_case in process $proc$sync_ram.v:27$880 in module $paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.
+Marked 1 switch rules as full_case in process $proc$sync_ram.v:27$868 in module $paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.
+Marked 1 switch rules as full_case in process $proc$regfile.v:17$469 in module regfile.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:464$465 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:455$464 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:424$459 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:415$458 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:364$447 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:355$446 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:124$330 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:115$328 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:106$327 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:87$322 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:78$321 in module mycpu_top.
+Marked 2 switch rules as full_case in process $proc$mycpu_top.v:56$318 in module mycpu_top.
+Marked 1 switch rules as full_case in process $proc$mycpu_top.v:47$317 in module mycpu_top.
+Marked 2 switch rules as full_case in process $proc$confreg.v:651$865 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 3 switch rules as full_case in process $proc$confreg.v:618$863 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 1 switch rules as full_case in process $proc$confreg.v:605$860 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 1 switch rules as full_case in process $proc$confreg.v:591$858 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 2 switch rules as full_case in process $proc$confreg.v:565$853 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 4 switch rules as full_case in process $proc$confreg.v:523$841 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 4 switch rules as full_case in process $proc$confreg.v:482$829 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 2 switch rules as full_case in process $proc$confreg.v:438$752 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 1 switch rules as full_case in process $proc$confreg.v:412$709 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 1 switch rules as full_case in process $proc$confreg.v:400$705 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 3 switch rules as full_case in process $proc$confreg.v:375$697 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 1 switch rules as full_case in process $proc$confreg.v:335$688 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 1 switch rules as full_case in process $proc$confreg.v:313$684 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 1 switch rules as full_case in process $proc$confreg.v:296$680 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 1 switch rules as full_case in process $proc$confreg.v:281$675 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 1 switch rules as full_case in process $proc$confreg.v:266$671 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 2 switch rules as full_case in process $proc$confreg.v:225$661 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 2 switch rules as full_case in process $proc$confreg.v:205$659 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 2 switch rules as full_case in process $proc$confreg.v:127$612 in module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+Marked 1 switch rules as full_case in process $proc$bridge_1x2.v:93$49 in module bridge_1x2.
+Removed a total of 0 dead cases.
+
+12.3. Executing PROC_PRUNE pass (remove redundant assignments in processes).
+Removed 11 redundant assignments.
+Promoted 28 assignments to connections.
+
+12.4. Executing PROC_INIT pass (extract init attributes).
+
+12.5. Executing PROC_ARST pass (detect async resets in processes).
+
+12.6. Executing PROC_ROM pass (convert switches to ROMs).
+Converted 2 switches.
+<suppressed ~84 debug messages>
+
+12.7. Executing PROC_MUX pass (convert decision trees to multiplexers).
+Creating decoders for process `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$proc$sync_ram.v:31$889'.
+     1/1: $0\rdata[31:0]
+Creating decoders for process `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$proc$sync_ram.v:27$880'.
+     1/3: $1$memwr$\ram$sync_ram.v:28$879_EN[31:0]$888
+     2/3: $1$memwr$\ram$sync_ram.v:28$879_DATA[31:0]$887
+     3/3: $1$memwr$\ram$sync_ram.v:28$879_ADDR[15:0]$886
+Creating decoders for process `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$proc$sync_ram.v:31$877'.
+     1/1: $0\rdata[31:0]
+Creating decoders for process `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$proc$sync_ram.v:27$868'.
+     1/3: $1$memwr$\ram$sync_ram.v:28$867_EN[31:0]$876
+     2/3: $1$memwr$\ram$sync_ram.v:28$867_DATA[31:0]$875
+     3/3: $1$memwr$\ram$sync_ram.v:28$867_ADDR[17:0]$874
+Creating decoders for process `\regfile.$proc$regfile.v:17$469'.
+     1/3: $1$memwr$\rf$regfile.v:18$468_EN[31:0]$475
+     2/3: $1$memwr$\rf$regfile.v:18$468_DATA[31:0]$474
+     3/3: $1$memwr$\rf$regfile.v:18$468_ADDR[4:0]$473
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:464$465'.
+     1/4: $0\wb_value[31:0]
+     2/4: $0\wb_dest[4:0]
+     3/4: $0\wb_gr_we[0:0]
+     4/4: $0\wb_pc[31:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:455$464'.
+     1/1: $0\wb_valid[0:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:424$459'.
+     1/5: $0\mem_dest[4:0]
+     2/5: $0\mem_res_from_mem[0:0]
+     3/5: $0\mem_gr_we[0:0]
+     4/5: $0\mem_alu_result[31:0]
+     5/5: $0\mem_pc[31:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:415$458'.
+     1/1: $0\mem_valid[0:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:364$447'.
+     1/9: $0\ex_dest[4:0]
+     2/9: $0\ex_res_from_mem[0:0]
+     3/9: $0\ex_mem_we[0:0]
+     4/9: $0\ex_gr_we[0:0]
+     5/9: $0\ex_rkd_value[31:0]
+     6/9: $0\ex_alu_src2[31:0]
+     7/9: $0\ex_alu_src1[31:0]
+     8/9: $0\ex_alu_op[11:0]
+     9/9: $0\ex_pc[31:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:355$446'.
+     1/1: $0\ex_valid[0:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:124$330'.
+     1/1: $0\if_inst[31:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:115$328'.
+     1/1: $0\if_pc[31:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:106$327'.
+     1/1: $0\if_valid[0:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:87$322'.
+     1/1: $0\if_req_pc[31:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:78$321'.
+     1/1: $0\if_req_valid[0:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:56$318'.
+     1/1: $0\pre_if_pc[31:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:47$317'.
+     1/1: $0\pre_if_valid[0:0]
+Creating decoders for process `\mycpu_top.$proc$mycpu_top.v:32$309'.
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:651$865'.
+     1/1: $0\num_a_g[6:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:618$863'.
+     1/2: $0\num_csn[7:0]
+     2/2: $0\scan_data[3:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:605$860'.
+     1/1: $0\count[19:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:591$858'.
+     1/1: $0\num_data[31:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:565$853'.
+     1/2: $0\led_rg1_data[31:0]
+     2/2: $0\led_rg0_data[31:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:523$841'.
+     1/3: $0\step1_count[19:0]
+     2/3: $0\step1_flag[0:0]
+     3/3: $0\btn_step1_r[0:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:482$829'.
+     1/3: $0\step0_count[19:0]
+     2/3: $0\step0_flag[0:0]
+     3/3: $0\btn_step0_r[0:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:438$752'.
+     1/1: $0\btn_key_r[15:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:412$709'.
+     1/1: $0\state[2:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:400$705'.
+     1/1: $0\state_count[3:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:375$697'.
+     1/2: $0\key_count[19:0]
+     2/2: $0\key_flag[0:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:335$688'.
+     1/1: $0\led_data[31:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:313$684'.
+     1/3: $0\virtual_uart_data[7:0]
+     2/3: $0\confreg_uart_valid[0:0]
+     3/3: $0\confreg_uart_data[7:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:296$680'.
+     1/1: $0\num_monitor[0:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:281$675'.
+     1/1: $0\open_trace[0:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:266$671'.
+     1/1: $0\io_simu[31:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:255$667'.
+     1/1: $0\simu_flag[31:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:247$666'.
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:225$661'.
+     1/1: $0\timer[31:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:205$659'.
+     1/2: $0\conf_wdata_r[31:0]
+     2/2: $0\write_timer_begin[0:0]
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:175$632'.
+Creating decoders for process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:127$612'.
+     1/1: $0\conf_rdata_reg[31:0]
+Creating decoders for process `\soc_lite_top.$proc$soc_lite_top.v:94$611'.
+Creating decoders for process `\bridge_1x2.$proc$bridge_1x2.v:93$49'.
+     1/2: $0\sel_conf_r[0:0]
+     2/2: $0\sel_sram_r[0:0]
+
+12.8. Executing PROC_DLATCH pass (convert process syncs to latches).
+
+12.9. Executing PROC_DFF pass (convert process syncs to FFs).
+Creating register for signal `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.\rdata' using process `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$proc$sync_ram.v:31$889'.
+  created $dff cell `$procdff$1262' with positive edge clock.
+Creating register for signal `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$memwr$\ram$sync_ram.v:28$879_ADDR' using process `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$proc$sync_ram.v:27$880'.
+  created $dff cell `$procdff$1263' with positive edge clock.
+Creating register for signal `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$memwr$\ram$sync_ram.v:28$879_DATA' using process `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$proc$sync_ram.v:27$880'.
+  created $dff cell `$procdff$1264' with positive edge clock.
+Creating register for signal `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$memwr$\ram$sync_ram.v:28$879_EN' using process `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$proc$sync_ram.v:27$880'.
+  created $dff cell `$procdff$1265' with positive edge clock.
+Creating register for signal `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.\rdata' using process `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$proc$sync_ram.v:31$877'.
+  created $dff cell `$procdff$1266' with positive edge clock.
+Creating register for signal `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$memwr$\ram$sync_ram.v:28$867_ADDR' using process `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$proc$sync_ram.v:27$868'.
+  created $dff cell `$procdff$1267' with positive edge clock.
+Creating register for signal `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$memwr$\ram$sync_ram.v:28$867_DATA' using process `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$proc$sync_ram.v:27$868'.
+  created $dff cell `$procdff$1268' with positive edge clock.
+Creating register for signal `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$memwr$\ram$sync_ram.v:28$867_EN' using process `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$proc$sync_ram.v:27$868'.
+  created $dff cell `$procdff$1269' with positive edge clock.
+Creating register for signal `\regfile.$memwr$\rf$regfile.v:18$468_ADDR' using process `\regfile.$proc$regfile.v:17$469'.
+  created $dff cell `$procdff$1270' with positive edge clock.
+Creating register for signal `\regfile.$memwr$\rf$regfile.v:18$468_DATA' using process `\regfile.$proc$regfile.v:17$469'.
+  created $dff cell `$procdff$1271' with positive edge clock.
+Creating register for signal `\regfile.$memwr$\rf$regfile.v:18$468_EN' using process `\regfile.$proc$regfile.v:17$469'.
+  created $dff cell `$procdff$1272' with positive edge clock.
+Creating register for signal `\mycpu_top.\wb_pc' using process `\mycpu_top.$proc$mycpu_top.v:464$465'.
+  created $dff cell `$procdff$1273' with positive edge clock.
+Creating register for signal `\mycpu_top.\wb_gr_we' using process `\mycpu_top.$proc$mycpu_top.v:464$465'.
+  created $dff cell `$procdff$1274' with positive edge clock.
+Creating register for signal `\mycpu_top.\wb_dest' using process `\mycpu_top.$proc$mycpu_top.v:464$465'.
+  created $dff cell `$procdff$1275' with positive edge clock.
+Creating register for signal `\mycpu_top.\wb_value' using process `\mycpu_top.$proc$mycpu_top.v:464$465'.
+  created $dff cell `$procdff$1276' with positive edge clock.
+Creating register for signal `\mycpu_top.\wb_valid' using process `\mycpu_top.$proc$mycpu_top.v:455$464'.
+  created $dff cell `$procdff$1277' with positive edge clock.
+Creating register for signal `\mycpu_top.\mem_pc' using process `\mycpu_top.$proc$mycpu_top.v:424$459'.
+  created $dff cell `$procdff$1278' with positive edge clock.
+Creating register for signal `\mycpu_top.\mem_alu_result' using process `\mycpu_top.$proc$mycpu_top.v:424$459'.
+  created $dff cell `$procdff$1279' with positive edge clock.
+Creating register for signal `\mycpu_top.\mem_gr_we' using process `\mycpu_top.$proc$mycpu_top.v:424$459'.
+  created $dff cell `$procdff$1280' with positive edge clock.
+Creating register for signal `\mycpu_top.\mem_res_from_mem' using process `\mycpu_top.$proc$mycpu_top.v:424$459'.
+  created $dff cell `$procdff$1281' with positive edge clock.
+Creating register for signal `\mycpu_top.\mem_dest' using process `\mycpu_top.$proc$mycpu_top.v:424$459'.
+  created $dff cell `$procdff$1282' with positive edge clock.
+Creating register for signal `\mycpu_top.\mem_valid' using process `\mycpu_top.$proc$mycpu_top.v:415$458'.
+  created $dff cell `$procdff$1283' with positive edge clock.
+Creating register for signal `\mycpu_top.\ex_pc' using process `\mycpu_top.$proc$mycpu_top.v:364$447'.
+  created $dff cell `$procdff$1284' with positive edge clock.
+Creating register for signal `\mycpu_top.\ex_alu_op' using process `\mycpu_top.$proc$mycpu_top.v:364$447'.
+  created $dff cell `$procdff$1285' with positive edge clock.
+Creating register for signal `\mycpu_top.\ex_alu_src1' using process `\mycpu_top.$proc$mycpu_top.v:364$447'.
+  created $dff cell `$procdff$1286' with positive edge clock.
+Creating register for signal `\mycpu_top.\ex_alu_src2' using process `\mycpu_top.$proc$mycpu_top.v:364$447'.
+  created $dff cell `$procdff$1287' with positive edge clock.
+Creating register for signal `\mycpu_top.\ex_rkd_value' using process `\mycpu_top.$proc$mycpu_top.v:364$447'.
+  created $dff cell `$procdff$1288' with positive edge clock.
+Creating register for signal `\mycpu_top.\ex_gr_we' using process `\mycpu_top.$proc$mycpu_top.v:364$447'.
+  created $dff cell `$procdff$1289' with positive edge clock.
+Creating register for signal `\mycpu_top.\ex_mem_we' using process `\mycpu_top.$proc$mycpu_top.v:364$447'.
+  created $dff cell `$procdff$1290' with positive edge clock.
+Creating register for signal `\mycpu_top.\ex_res_from_mem' using process `\mycpu_top.$proc$mycpu_top.v:364$447'.
+  created $dff cell `$procdff$1291' with positive edge clock.
+Creating register for signal `\mycpu_top.\ex_dest' using process `\mycpu_top.$proc$mycpu_top.v:364$447'.
+  created $dff cell `$procdff$1292' with positive edge clock.
+Creating register for signal `\mycpu_top.\ex_valid' using process `\mycpu_top.$proc$mycpu_top.v:355$446'.
+  created $dff cell `$procdff$1293' with positive edge clock.
+Creating register for signal `\mycpu_top.\if_inst' using process `\mycpu_top.$proc$mycpu_top.v:124$330'.
+  created $dff cell `$procdff$1294' with positive edge clock.
+Creating register for signal `\mycpu_top.\if_pc' using process `\mycpu_top.$proc$mycpu_top.v:115$328'.
+  created $dff cell `$procdff$1295' with positive edge clock.
+Creating register for signal `\mycpu_top.\if_valid' using process `\mycpu_top.$proc$mycpu_top.v:106$327'.
+  created $dff cell `$procdff$1296' with positive edge clock.
+Creating register for signal `\mycpu_top.\if_req_pc' using process `\mycpu_top.$proc$mycpu_top.v:87$322'.
+  created $dff cell `$procdff$1297' with positive edge clock.
+Creating register for signal `\mycpu_top.\if_req_valid' using process `\mycpu_top.$proc$mycpu_top.v:78$321'.
+  created $dff cell `$procdff$1298' with positive edge clock.
+Creating register for signal `\mycpu_top.\pre_if_pc' using process `\mycpu_top.$proc$mycpu_top.v:56$318'.
+  created $dff cell `$procdff$1299' with positive edge clock.
+Creating register for signal `\mycpu_top.\pre_if_valid' using process `\mycpu_top.$proc$mycpu_top.v:47$317'.
+  created $dff cell `$procdff$1300' with positive edge clock.
+Creating register for signal `\mycpu_top.\reset' using process `\mycpu_top.$proc$mycpu_top.v:32$309'.
+  created $dff cell `$procdff$1301' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\num_a_g' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:651$865'.
+  created $dff cell `$procdff$1302' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\num_csn' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:618$863'.
+  created $dff cell `$procdff$1303' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\scan_data' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:618$863'.
+  created $dff cell `$procdff$1304' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\count' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:605$860'.
+  created $dff cell `$procdff$1305' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\num_data' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:591$858'.
+  created $dff cell `$procdff$1306' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\led_rg0_data' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:565$853'.
+  created $dff cell `$procdff$1307' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\led_rg1_data' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:565$853'.
+  created $dff cell `$procdff$1308' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\btn_step1_r' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:523$841'.
+  created $dff cell `$procdff$1309' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\step1_flag' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:523$841'.
+  created $dff cell `$procdff$1310' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\step1_count' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:523$841'.
+  created $dff cell `$procdff$1311' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\btn_step0_r' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:482$829'.
+  created $dff cell `$procdff$1312' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\step0_flag' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:482$829'.
+  created $dff cell `$procdff$1313' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\step0_count' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:482$829'.
+  created $dff cell `$procdff$1314' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\btn_key_r' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:438$752'.
+  created $dff cell `$procdff$1315' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\state' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:412$709'.
+  created $dff cell `$procdff$1316' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\state_count' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:400$705'.
+  created $dff cell `$procdff$1317' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\key_flag' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:375$697'.
+  created $dff cell `$procdff$1318' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\key_count' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:375$697'.
+  created $dff cell `$procdff$1319' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\led_data' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:335$688'.
+  created $dff cell `$procdff$1320' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\confreg_uart_data' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:313$684'.
+  created $dff cell `$procdff$1321' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\confreg_uart_valid' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:313$684'.
+  created $dff cell `$procdff$1322' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\virtual_uart_data' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:313$684'.
+  created $dff cell `$procdff$1323' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\num_monitor' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:296$680'.
+  created $dff cell `$procdff$1324' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\open_trace' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:281$675'.
+  created $dff cell `$procdff$1325' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\io_simu' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:266$671'.
+  created $dff cell `$procdff$1326' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\simu_flag' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:255$667'.
+  created $dff cell `$procdff$1327' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\timer_r2' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:247$666'.
+  created $dff cell `$procdff$1328' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\timer_r1' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:247$666'.
+  created $dff cell `$procdff$1329' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\write_timer_begin_r1' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:225$661'.
+  created $dff cell `$procdff$1330' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\write_timer_begin_r2' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:225$661'.
+  created $dff cell `$procdff$1331' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\write_timer_begin_r3' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:225$661'.
+  created $dff cell `$procdff$1332' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\conf_wdata_r1' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:225$661'.
+  created $dff cell `$procdff$1333' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\conf_wdata_r2' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:225$661'.
+  created $dff cell `$procdff$1334' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\timer' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:225$661'.
+  created $dff cell `$procdff$1335' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\write_timer_begin' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:205$659'.
+  created $dff cell `$procdff$1336' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\write_timer_end_r1' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:205$659'.
+  created $dff cell `$procdff$1337' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\write_timer_end_r2' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:205$659'.
+  created $dff cell `$procdff$1338' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\conf_wdata_r' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:205$659'.
+  created $dff cell `$procdff$1339' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\cr0' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:175$632'.
+  created $dff cell `$procdff$1340' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\cr1' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:175$632'.
+  created $dff cell `$procdff$1341' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\cr2' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:175$632'.
+  created $dff cell `$procdff$1342' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\cr3' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:175$632'.
+  created $dff cell `$procdff$1343' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\cr4' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:175$632'.
+  created $dff cell `$procdff$1344' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\cr5' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:175$632'.
+  created $dff cell `$procdff$1345' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\cr6' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:175$632'.
+  created $dff cell `$procdff$1346' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\cr7' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:175$632'.
+  created $dff cell `$procdff$1347' with positive edge clock.
+Creating register for signal `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.\conf_rdata_reg' using process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:127$612'.
+  created $dff cell `$procdff$1348' with positive edge clock.
+Creating register for signal `\soc_lite_top.\cpu_resetn' using process `\soc_lite_top.$proc$soc_lite_top.v:94$611'.
+  created $dff cell `$procdff$1349' with positive edge clock.
+Creating register for signal `\bridge_1x2.\sel_sram_r' using process `\bridge_1x2.$proc$bridge_1x2.v:93$49'.
+  created $dff cell `$procdff$1350' with positive edge clock.
+Creating register for signal `\bridge_1x2.\sel_conf_r' using process `\bridge_1x2.$proc$bridge_1x2.v:93$49'.
+  created $dff cell `$procdff$1351' with positive edge clock.
+
+12.10. Executing PROC_MEMWR pass (convert process memory writes to cells).
+
+12.11. Executing PROC_CLEAN pass (remove empty switches from decision trees).
+Found and cleaned up 1 empty switch in `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$proc$sync_ram.v:31$889'.
+Removing empty process `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$proc$sync_ram.v:31$889'.
+Found and cleaned up 1 empty switch in `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$proc$sync_ram.v:27$880'.
+Removing empty process `$paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.$proc$sync_ram.v:27$880'.
+Found and cleaned up 1 empty switch in `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$proc$sync_ram.v:31$877'.
+Removing empty process `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$proc$sync_ram.v:31$877'.
+Found and cleaned up 1 empty switch in `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$proc$sync_ram.v:27$868'.
+Removing empty process `$paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.$proc$sync_ram.v:27$868'.
+Found and cleaned up 1 empty switch in `\regfile.$proc$regfile.v:17$469'.
+Removing empty process `regfile.$proc$regfile.v:17$469'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:464$465'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:464$465'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:455$464'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:455$464'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:424$459'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:424$459'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:415$458'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:415$458'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:364$447'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:364$447'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:355$446'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:355$446'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:124$330'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:124$330'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:115$328'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:115$328'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:106$327'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:106$327'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:87$322'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:87$322'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:78$321'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:78$321'.
+Found and cleaned up 3 empty switches in `\mycpu_top.$proc$mycpu_top.v:56$318'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:56$318'.
+Found and cleaned up 2 empty switches in `\mycpu_top.$proc$mycpu_top.v:47$317'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:47$317'.
+Removing empty process `mycpu_top.$proc$mycpu_top.v:32$309'.
+Found and cleaned up 2 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:651$865'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:651$865'.
+Found and cleaned up 3 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:618$863'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:618$863'.
+Found and cleaned up 1 empty switch in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:605$860'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:605$860'.
+Found and cleaned up 2 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:591$858'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:591$858'.
+Found and cleaned up 4 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:565$853'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:565$853'.
+Found and cleaned up 6 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:523$841'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:523$841'.
+Found and cleaned up 6 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:482$829'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:482$829'.
+Found and cleaned up 3 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:438$752'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:438$752'.
+Found and cleaned up 2 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:412$709'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:412$709'.
+Found and cleaned up 1 empty switch in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:400$705'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:400$705'.
+Found and cleaned up 4 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:375$697'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:375$697'.
+Found and cleaned up 2 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:335$688'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:335$688'.
+Found and cleaned up 2 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:313$684'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:313$684'.
+Found and cleaned up 2 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:296$680'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:296$680'.
+Found and cleaned up 2 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:281$675'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:281$675'.
+Found and cleaned up 2 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:266$671'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:266$671'.
+Found and cleaned up 1 empty switch in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:255$667'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:255$667'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:247$666'.
+Found and cleaned up 2 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:225$661'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:225$661'.
+Found and cleaned up 3 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:205$659'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:205$659'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:175$632'.
+Found and cleaned up 3 empty switches in `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:127$612'.
+Removing empty process `$paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.$proc$confreg.v:127$612'.
+Removing empty process `soc_lite_top.$proc$soc_lite_top.v:94$611'.
+Found and cleaned up 1 empty switch in `\bridge_1x2.$proc$bridge_1x2.v:93$49'.
+Removing empty process `bridge_1x2.$proc$bridge_1x2.v:93$49'.
+Cleaned up 86 empty switches.
+
+12.12. Executing OPT_EXPR pass (perform const folding).
+Optimizing module decoder_6_64.
+<suppressed ~1 debug messages>
+Optimizing module decoder_5_32.
+<suppressed ~1 debug messages>
+Optimizing module decoder_4_16.
+<suppressed ~1 debug messages>
+Optimizing module decoder_2_4.
+<suppressed ~1 debug messages>
+Optimizing module data_ram.
+Optimizing module inst_ram.
+Optimizing module $paramod$702bb5941cb617887863b01767f3dd30eabf1844\sync_ram.
+Optimizing module $paramod$3b1cb1da1ccc739a1710e51cdd8c299a9eeba7bd\sync_ram.
+Optimizing module regfile.
+<suppressed ~2 debug messages>
+Optimizing module mycpu_top.
+<suppressed ~33 debug messages>
+Optimizing module $paramod\confreg\SIMULATION=s32'00000000000000000000000000000001.
+<suppressed ~43 debug messages>
+Optimizing module soc_lite_top.
+Optimizing module bridge_1x2.
+<suppressed ~3 debug messages>
+Optimizing module alu.
+
+13. Executing MEMORY_COLLECT pass (generating $mem cells).
+
+14. Executing JSON backend.
+
+End of script. Logfile hash: 924b68beb5, time: 0.19s, user: 0.19s, system: 0.00s
+Yosys 0.69 (git sha1 9f75ca1f9, Release, Clang /workspace/YoWASP/yosys/wasi-sdk-33.0-x86_64-linux/share/cmake/../..//bin/clang++ 22.1.0)
+Time spent: 58% 2x write_json (0 sec), 18% 10x read_verilog (0 sec), ...
+

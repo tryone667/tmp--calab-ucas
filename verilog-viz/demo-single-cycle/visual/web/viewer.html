@@ -1,0 +1,443 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<link rel="icon" href="data:,">
+<title>Verilog 框图查看器</title>
+<script src="main.js"></script>
+<style>
+  html, body { margin: 0; height: 100%; font-family: Consolas, monospace; font-size: 13px; overflow: hidden; }
+  #app { display: flex; height: 100vh; width: 100%; overflow: hidden; }
+  #sidebar {
+    width: 235px; box-sizing: border-box; flex: 0 0 auto; border-right: 1px solid #ddd; background: #f8f8f8;
+    padding: 10px; display: flex; flex-direction: column; gap: 8px;
+    overflow-y: auto; transition: margin-left .15s ease;
+  }
+  body.collapsed #sidebar { margin-left: -236px; }
+  #expandbtn {
+    display: none; position: absolute; left: 6px; top: 6px; z-index: 9;
+  }
+  body.collapsed #expandbtn { display: block; }
+  .sb-head { display: flex; justify-content: space-between; align-items: center; font-weight: bold; }
+  .sb-sec .sb-label { color: #888; font-size: 12px; margin: 8px 0 4px; }
+  .btn-row { display: flex; gap: 4px; margin: 4px 0; flex-wrap: wrap; }
+  .btn-row button { padding: 3px 8px; cursor: pointer; }
+  #modsel { width: 100%; padding: 3px; }
+  .sb-check { display: block; margin-top: 4px; }
+  .sb-meta { font-size: 12px; color: #666; }
+  .sb-foot { margin-top: auto; font-size: 11px; color: #aaa; }
+  #main { flex: 1; min-width: 0; position: relative; }
+  #paper { position: absolute; left: 0; right: 0; top: 26px; bottom: 260px; overflow: hidden; background: #fff; }
+  #hint { position: absolute; right: 8px; top: 8px; color: #bbb; font-size: 11px; pointer-events: none; }
+  #bottom { position: absolute; left: 0; right: 0; bottom: 0; height: 260px; border-top: 1px solid #eee; overflow: auto; padding: 2px 8px; box-sizing: border-box; }
+  .djs .connection { stroke: #b6b6b6 !important; stroke-width: 1 !important; }
+  .djs .connection-wrap { stroke: transparent !important; }
+  .djs .marker-source, .djs .marker-target { fill: #b6b6b6 !important; stroke: #b6b6b6 !important; }
+  .djs .hl-link .connection { stroke: #e91e63 !important; stroke-width: 2 !important; }
+  .djs .hl-link .marker-target, .djs .hl-link .marker-source { fill: #e91e63 !important; stroke: #e91e63 !important; }
+  .djs .hl-cell .body, .djs .hl-cell [class*="body"] { stroke: #e91e63 !important; }
+  #simcard { position: absolute; left: 8px; top: 8px; z-index: 7; max-width: 660px; padding: 8px 10px; font-size: 12px; line-height: 1.75; border: 2px solid #ccc; border-radius: 6px; background: rgba(255,255,255,.96); box-shadow: 0 2px 8px rgba(0,0,0,.15); }
+  #simcard.ok { border-color: #2e7d32; }
+  #simcard.bad { border-color: #c62828; }
+  #simcard #simclose { float: right; border: none; background: none; cursor: pointer; font-size: 14px; color: #888; }
+  #crumb { position: absolute; left: 0; right: 0; top: 0; height: 26px; line-height: 26px; font-size: 12px; color: #666; border-bottom: 1px solid #eee; padding: 0 10px; background: #fafafa; z-index: 5; white-space: nowrap; overflow: hidden; }
+  .sb-slider { display: flex; align-items: center; gap: 6px; font-size: 12px; margin-top: 6px; }
+  .sb-slider input[type=range] { flex: 1; }
+  .djs a.zoom { font-size: 15px; padding: 0 2px; }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="sidebar">
+    <div class="sb-head">
+      <span>Verilog 框图</span>
+      <button id="collapsebtn" title="收起边栏">«</button>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-label">模块</div>
+      <select id="modsel"></select>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-label">仿真</div>
+      <div class="btn-row">
+        <button name="start">▶ 运行</button>
+        <button name="stop">■ 停止</button>
+      </div>
+      <div class="btn-row"><button id="stepbtn">⏭ 步进 +1 拍</button></div>
+      <div class="sb-meta">tick: <span id="tickinfo">0</span></div>
+    </div>
+    <div class="sb-sec">
+      <div class="sb-label">视图</div>
+      <div class="btn-row">
+        <button id="zoomin" title="放大">＋</button>
+        <button id="zoomout" title="缩小">－</button>
+        <button id="fitbtn">适配</button>
+      </div>
+      <label class="sb-check"><input name="fixed" type="checkbox"> 固定布局</label>
+      <div class="sb-slider"><span>紧凑度</span><input id="compactrange" type="range" min="40" max="100" step="2" value="62"><span id="compactval">62%</span></div>
+    </div>
+    <div class="sb-foot">滚轮缩放 · 拖拽平移 · 悬停模块点 🔍 钻入</div>
+  </aside>
+  <button id="expandbtn" title="展开边栏">»</button>
+  <main id="main">
+    <div id="crumb"></div>
+    <div id="paper"><div id="hint"></div></div>
+    <div id="bottom">
+      <div id="iopanel"></div>
+      <div id="monitor"></div>
+    </div>
+  </main>
+</div>
+<script src="circuit_data.js"></script>
+<script>
+  var circuit = null, monitor, monitorview, iopanel, paper = null;
+  var pendingFit = false, fitDeadline = 0, pointerDown = false;
+  var compactFactor = 0.62, compactFitTimer = 0, baseData = null, baseOrigin = null, userDragged = false;
+  var navStack = [''];
+  var start = $('button[name=start]');
+  var stop = $('button[name=stop]');
+
+  const updateTick = function () { $('#tickinfo').text(circuit ? circuit.tick : 0); };
+
+  const setFixed = function (f) {
+    if (!paper) return;
+    try { if (typeof paper.fixed === 'function') { paper.fixed(f); return; } } catch (e) {}
+    try { paper.setInteractivity({ elementMove: !f, linkMove: !f }); } catch (e) {}
+  };
+
+  const captureBase = function () {
+    const cells = paper.model.getCells();
+    let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+    cells.forEach(function (c) {
+      if (c.isLink()) return;
+      const p = c.position();
+      if (!p) return;
+      x1 = Math.min(x1, p.x); y1 = Math.min(y1, p.y);
+      x2 = Math.max(x2, p.x); y2 = Math.max(y2, p.y);
+    });
+    if (!isFinite(x1) || (x2 - x1) < 800) return false;
+    baseOrigin = { x: x1, y: y1 };
+    baseData = cells.map(function (c) {
+      if (c.isLink()) {
+        return { id: c.id, type: 'link', vertices: (c.vertices() || []).map(function (v) { return { x: v.x, y: v.y }; }) };
+      }
+      const p = c.position();
+      return { id: c.id, type: 'elem', x: p.x, y: p.y };
+    });
+    return true;
+  };
+  const applyCompact = function () {
+    if (!paper || userDragged) return;
+    if (!baseData && !captureBase()) return;
+    const k = compactFactor;
+    const ox = baseOrigin.x, oy = baseOrigin.y;
+    baseData.forEach(function (d) {
+      const cell = paper.model.getCell(d.id);
+      if (!cell) return;
+      if (d.type === 'link') {
+        cell.vertices(d.vertices.map(function (v) { return { x: ox + (v.x - ox) * k, y: oy + (v.y - oy) * k }; }));
+      } else {
+        cell.position(ox + (d.x - ox) * k, oy + (d.y - oy) * k);
+      }
+    });
+  };
+
+  const fitView = function () {
+    if (!paper || pointerDown) return;
+    try {
+      let bbox = null;
+      try { if (typeof paper.getContentArea === 'function') bbox = paper.getContentArea(); } catch (e) {}
+      if (!bbox || !bbox.width) {
+        try { if (typeof paper.getContentBBox === 'function') bbox = paper.getContentBBox(); } catch (e) {}
+      }
+      if (!bbox || !bbox.width) {
+        let x1 = Infinity, y1 = Infinity, x2 = -Infinity, y2 = -Infinity;
+        paper.model.getCells().forEach(function (c) {
+          const b = c.getBBox && c.getBBox();
+          if (!b) return;
+          x1 = Math.min(x1, b.x); y1 = Math.min(y1, b.y);
+          x2 = Math.max(x2, b.x + b.width); y2 = Math.max(y2, b.y + b.height);
+        });
+        if (isFinite(x1)) bbox = { x: x1, y: y1, width: x2 - x1, height: y2 - y1 };
+      }
+      if (!bbox || !bbox.width || !bbox.height) return;
+      const el = document.getElementById('paper');
+      el.style.width = ''; el.style.height = '';
+      const cw = el.clientWidth, ch = el.clientHeight;
+      const pad = 30;
+      const s = Math.min((cw - pad * 2) / bbox.width, (ch - pad * 2) / bbox.height);
+      const sc = Math.min(2, Math.max(0.02, s));
+      const tx = cw / 2 - (bbox.x + bbox.width / 2) * sc;
+      const ty = ch / 2 - (bbox.y + bbox.height / 2) * sc;
+      paper.scale(sc, sc);
+      paper.translate(tx, ty);
+      console.log('[fit] s=' + sc.toFixed(3) + ' tx=' + Math.round(tx) + ' ty=' + Math.round(ty) + ' cw=' + cw + ' ch=' + ch);
+      if (Date.now() > fitDeadline) pendingFit = false;
+    } catch (e) { console.warn('fit failed:', e.message); }
+  };
+  window.fitView = fitView;
+
+  const zoomBy = function (factor, cx, cy) {
+    if (!paper) return;
+    try {
+      const s = paper.scale(); const t = paper.translate();
+      const el = document.getElementById('paper');
+      const cw = el.clientWidth, ch = el.clientHeight;
+      cx = (cx === undefined) ? cw / 2 : cx; cy = (cy === undefined) ? ch / 2 : cy;
+      const ns = Math.min(8, Math.max(0.05, s.sx * factor));
+      const k = ns / s.sx;
+      const ntx = cx - k * (cx - t.tx);
+      const nty = cy - k * (cy - t.ty);
+      try { paper.freeze(); } catch (e) {}
+      paper.scale(ns, ns);
+      paper.translate(ntx, nty);
+      try { paper.unfreeze(); } catch (e) {}
+    } catch (e) { console.warn('zoom failed:', e.message); }
+  };
+
+  const settle = async function () {
+    let i = 0;
+    while (circuit.hasPendingEvents && i < 5000) { await circuit.updateGates(); i++; }
+  };
+
+  const findClk = function () {
+    return circuit.getInputCells().find(c => String(c.get('label') || c.get('net') || '').toLowerCase().includes('clk'));
+  };
+  const normClkLow = function (clk) {
+    try {
+      const cur = clk.get('outputSignals') && clk.get('outputSignals').out;
+      if (cur && cur.constructor && typeof cur.constructor.fromBool === 'function') {
+        clk.setInput(cur.constructor.fromBool(false));
+      }
+    } catch (e) {}
+  };
+
+  var lastHover = null;
+  const hoverOff = function () {
+    lastHover = null;
+    document.querySelectorAll('#paper .hl-link, #paper .hl-cell').forEach(function (el) {
+      el.classList.remove('hl-link');
+      el.classList.remove('hl-cell');
+    });
+  };
+  const hoverOn = function (cell) {
+    if (lastHover === cell.id) return;
+    hoverOff();
+    lastHover = cell.id;
+    const add = function (c, cls) { try { const v = paper.findViewByModel(c); if (v && v.el) v.el.classList.add(cls); } catch (e) {} };
+    if (cell.isLink && cell.isLink()) {
+      add(cell, 'hl-link');
+      const s = cell.get('source') || {}, tt = cell.get('target') || {};
+      if (s.id) { const c1 = paper.model.getCell(s.id); if (c1) add(c1, 'hl-cell'); }
+      if (tt.id) { const c2 = paper.model.getCell(tt.id); if (c2) add(c2, 'hl-cell'); }
+    } else {
+      add(cell, 'hl-cell');
+      paper.model.getLinks().forEach(function (l) {
+        const s2 = l.get('source') || {}, t2 = l.get('target') || {};
+        if (s2.id === cell.id || t2.id === cell.id) add(l, 'hl-link');
+      });
+    }
+  };
+  const renderCrumb = function () {
+    const el = document.getElementById('crumb');
+    el.innerHTML = '';
+    navStack.forEach(function (key, i) {
+      if (i > 0) {
+        const sep = document.createElement('span');
+        sep.textContent = ' › ';
+        el.appendChild(sep);
+      }
+      const a = document.createElement('a');
+      a.textContent = key || '顶层';
+      a.href = 'javascript:void(0)';
+      const isLast = (i === navStack.length - 1);
+      a.style.color = isLast ? '#333' : '#0366d6';
+      a.style.fontWeight = isLast ? 'bold' : 'normal';
+      a.style.pointerEvents = isLast ? 'none' : 'auto';
+      a.onclick = function () {
+        navStack = navStack.slice(0, i + 1);
+        jumpTo(navStack[navStack.length - 1]);
+      };
+      el.appendChild(a);
+    });
+  };
+  const jumpTo = function (key) {
+    const all = window.CIRCUIT_JSON;
+    if (key) {
+      const sc = all.subcircuits[key];
+      loadCircuit({ devices: sc.devices, connectors: sc.connectors, subcircuits: all.subcircuits });
+    } else {
+      loadCircuit({ devices: all.devices, connectors: all.connectors, subcircuits: all.subcircuits });
+    }
+    $('#modsel').val(key || '');
+    renderCrumb();
+  };
+
+  const loadCircuit = function (json) {
+    if (circuit) { try { circuit.stop(); } catch (e) {} }
+    if (monitorview) { try { monitorview.shutdown(); } catch (e) {} }
+    if (iopanel) { try { iopanel.shutdown(); } catch (e) {} }
+    $('#paper').find('svg').remove();
+    $('#monitor').empty(); $('#iopanel').empty();
+    circuit = new digitaljs.Circuit(json);
+    monitor = new digitaljs.Monitor(circuit);
+    monitorview = new digitaljs.MonitorView({model: monitor, el: $('#monitor')});
+    iopanel = new digitaljs.IOPanelView({model: circuit, el: $('#iopanel')});
+    paper = circuit.displayOn($('#paper'));
+    try { circuit.stopListening(paper, 'render:done'); } catch (e) {}
+    try { circuit.stopListening(paper, 'open:subcircuit'); } catch (e) {}
+    paper.on('open:subcircuit', function (model) {
+      const ct = model && model.get && model.get('celltype');
+      if (ct && window.CIRCUIT_JSON.subcircuits && window.CIRCUIT_JSON.subcircuits[ct]) { navStack.push(ct); jumpTo(ct); }
+    });
+    paper.on('cell:pointerdblclick', function (cellView) {
+      const m = cellView && cellView.model;
+      if (m && m.get && m.get('type') === 'Subcircuit') {
+        const ct = m.get('celltype');
+        if (ct && window.CIRCUIT_JSON.subcircuits && window.CIRCUIT_JSON.subcircuits[ct]) { navStack.push(ct); jumpTo(ct); }
+      }
+    });
+    paper.on('cell:mouseenter', function (v) { if (v && v.model) hoverOn(v.model); });
+    paper.on('cell:mouseleave', function () { hoverOff(); });
+    pendingFit = true;
+    fitDeadline = Date.now() + 3000;
+    baseData = null; baseOrigin = null; userDragged = false;
+    try { paper.on('render:done', function () { if (pendingFit && !pointerDown) setTimeout(function () { if (pendingFit && !pointerDown) fitView(); }, 30); }); } catch (e) {}
+    setFixed($('input[name=fixed]').prop('checked'));
+    circuit.on('changeRunning', () => {
+      start.prop('disabled', circuit.running);
+      stop.prop('disabled', !circuit.running);
+    });
+    start.prop('disabled', false);
+    stop.prop('disabled', true);
+    updateTick();
+    setTimeout(function () { applyCompact(); if (pendingFit && !pointerDown) setTimeout(fitView, 120); }, 400);
+    setTimeout(function () { applyCompact(); if (pendingFit && !pointerDown) setTimeout(fitView, 120); }, 1200);
+    setTimeout(function () { applyCompact(); if (pendingFit && !pointerDown) setTimeout(fitView, 120); }, 2500);
+  };
+
+  $('#stepbtn').on('click', async function () {
+    if (!circuit) return;
+    try {
+      const clk = findClk();
+      if (clk && typeof clk.toggleInput === 'function') {
+        normClkLow(clk);
+        await settle();
+        clk.toggleInput(); await settle();
+        clk.toggleInput(); await settle();
+      } else { await circuit.updateGates(); await circuit.updateGates(); }
+    } catch (e) { console.warn('step error:', e.message); }
+    updateTick();
+  });
+
+  start.on('click', () => { circuit.start(); updateTick(); });
+  stop.on('click', () => { circuit.stop(); updateTick(); });
+  $('input[name=fixed]').change(function () { setFixed($(this).prop('checked')); });
+
+  $('#fitbtn').on('click', fitView);
+  $('#compactrange').on('input', function () {
+    compactFactor = (+this.value) / 100;
+    $('#compactval').text(this.value + '%');
+    applyCompact();
+    clearTimeout(compactFitTimer);
+    compactFitTimer = setTimeout(fitView, 200);
+  });
+  $('#zoomin').on('click', () => zoomBy(1.2));
+  $('#zoomout').on('click', () => zoomBy(1 / 1.2));
+  $('#collapsebtn').on('click', () => { $('body').addClass('collapsed'); setTimeout(fitView, 200); });
+  $('#expandbtn').on('click', () => { $('body').removeClass('collapsed'); setTimeout(fitView, 200); });
+
+  let wheelAcc = 1, wheelPos = null, wheelRaf = 0;
+  $('#paper').on('wheel', function (ev) {
+    ev.preventDefault();
+    const e = ev.originalEvent || ev;
+    const rect = this.getBoundingClientRect();
+    wheelPos = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    wheelAcc *= Math.pow(1.0015, -e.deltaY);
+    if (!wheelRaf) {
+      wheelRaf = requestAnimationFrame(function () {
+        wheelRaf = 0;
+        const f = Math.min(2.2, Math.max(1 / 2.2, wheelAcc));
+        wheelAcc = 1;
+        zoomBy(f, wheelPos.x, wheelPos.y);
+      });
+    }
+  });
+
+  (function () {
+    let pan = null;
+    $('#paper').on('mousedown', function (ev) {
+      pointerDown = true;
+      userDragged = true;
+      if (!paper || ev.which !== 1) return;
+      if ($(ev.target).closest('.joint-cell, .joint-element, .joint-link').length) return;
+      const t = paper.translate();
+      pan = { x: ev.clientX, y: ev.clientY, tx: t.tx, ty: t.ty };
+      ev.preventDefault();
+    });
+    $(document).on('mousemove', function (ev) {
+      if (!pan) return;
+      paper.translate(pan.tx + (ev.clientX - pan.x), pan.ty + (ev.clientY - pan.y));
+    });
+    $(document).on('mouseup', function () { pan = null; pointerDown = false; });
+  })();
+
+  $('#modsel').change(function () {
+    navStack = this.value ? ['', this.value] : [''];
+    jumpTo(this.value);
+  });
+
+  const fmtHex = function (v) { return (v === null || v === undefined) ? '?' : ('0x' + Number(v).toString(16).padStart(8, '0')); };
+  const renderSimCard = function (r) {
+    if (!r) return;
+    const ok = (r.status === 'PASS');
+    const box = document.createElement('div');
+    box.id = 'simcard';
+    box.className = ok ? 'ok' : 'bad';
+    const L = [];
+    L.push('<button id="simclose" title="关闭">×</button>');
+    L.push('<b>' + (ok ? '✅ 仿真 PASS' : '❌ 仿真 FAIL') + '</b>');
+    if (ok) {
+      L.push((r.test_points || []).length + ' 个功能测试点全过');
+    } else if (r.errors && r.errors.length) {
+      const e = r.errors[0];
+      if (e.kind === 'wb_mismatch' && r.instruction) {
+        const ins = r.instruction;
+        L.push('出错时刻 t = ' + e.time_ns + ' ns');
+        L.push('报错指令：<b>' + (ins.name || '?') + '</b> r' + ins.rj + ', r' + ins.rk + ' → r' + ins.rd +
+               '（PC=' + ins.pc + '，mif 第 ' + ins.mif_line + ' 行，指令字 ' + ins.word + '）');
+        L.push('期望写回 r' + e.ref.wnum + ' ← ' + fmtHex(e.ref.wdata) + ' ｜ 实际 r' + e.got.wnum + ' ← ' + fmtHex(e.got.wdata));
+        const ops = r.operands || {};
+        L.push('操作数：' + Object.keys(ops).map(function (k) { return k + ' = ' + fmtHex(ops[k]); }).join('，'));
+        if (r.auto_check) {
+          L.push('自动校验：' + Object.keys(r.auto_check).map(function (k) { return k + ' = ' + r.auto_check[k]; }).join('，'));
+        }
+      } else {
+        L.push('功能测试点错误 @ t=' + e.time_ns + ' ns');
+      }
+    }
+    box.innerHTML = L.join('<br>');
+    document.getElementById('paper').appendChild(box);
+    document.getElementById('simclose').onclick = function () { box.remove(); };
+  };
+  (function () {
+    const s = document.createElement('script');
+    s.src = 'sim_data.js';
+    s.onload = function () { renderSimCard(window.SIM_RESULT); };
+    s.onerror = function () {};
+    document.head.appendChild(s);
+  })();
+
+  $(window).ready(function () {
+    const sel = $('#modsel');
+    sel.append('<option value="">顶层 top</option>');
+    const all = window.CIRCUIT_JSON;
+    Object.keys(all.subcircuits || {}).sort().forEach(function (n) {
+      sel.append('<option value="' + n + '">' + n + '</option>');
+    });
+    loadCircuit(all);
+    renderCrumb();
+  });
+</script>
+</body>
+</html>
