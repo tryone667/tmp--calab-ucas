@@ -24,6 +24,7 @@ LA32R 五级流水 CPU 实验工作仓库（计算机体系结构研讨课 · �
     exp8/reading/          阅读版 mycpu_top（行尾中文注释，标 【阻塞】【cancel】）
     docs/                  exp8 验收速查、数据通路 PNG、专题实验报告与插图
     tools/                 run_sim_cli.bat（xsim 一键脚本）；flash_board.sh/.tcl（上板）
+    datapath-preview/      数据通路预览（exp7~11：收束图 / 布线可拖版 / DigitalJS 全量图；双击 index.html）
 
 ## 补丁链
 

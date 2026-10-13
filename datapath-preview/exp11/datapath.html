@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>exp11 数据通路（收束版 · 带端口）</title>
+<link rel="icon" href="data:,"/>
+<style>
+  body{margin:0;background:#f4f6f8;color:#263238;font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1680px;margin:0 auto;padding:18px 22px 44px;}
+  h1{font-size:21px;margin:6px 0 4px;}
+  h3{font-size:15px;margin:2px 0 10px;}
+  .sub{font-size:13px;color:#607d8b;line-height:1.7;}
+  .card{background:#fff;border:1px solid #e0e6ea;border-radius:10px;padding:14px 16px;margin-top:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;color:#455a64;margin:2px 0 10px;}
+  .legend i{display:inline-block;width:26px;border-top:3px solid #37474f;vertical-align:middle;margin-right:6px;}
+  .legend .c i{border-top-color:#1565c0;}
+  .legend .r i{border-top-color:#c62828;}
+  .legend .d i{border-top-color:#c62828;border-top-style:dashed;}
+  table{border-collapse:collapse;width:100%;font-size:12.8px;}
+  th,td{border:1px solid #e3e9ee;padding:6px 9px;text-align:left;vertical-align:top;}
+  th{background:#f7fafc;color:#37474f;font-weight:600;}
+  td:first-child{white-space:nowrap;font-weight:600;}
+  td.num{text-align:center;white-space:nowrap;}
+  code{background:#f2f5f7;padding:0 4px;border-radius:3px;font-family:Consolas,monospace;font-size:12px;}
+  ol{font-size:13.2px;color:#37474f;line-height:1.85;margin:6px 0 4px;padding-left:22px;}
+  a{color:#1565c0;}
+  svg{width:100%;height:auto;display:block;}
+  text{font-family:Consolas,"Microsoft YaHei",monospace;}
+  .bxbox{fill:#f5f7fa;stroke:#90a4ae;stroke-width:1.4;}
+  .ram{fill:#fff3e0;stroke:#ef6c00;}
+  .rf{fill:#e8f5e9;stroke:#43a047;}
+  .pipe{fill:#e3f2fd;stroke:#1e88e5;}
+  .ctrlbox{fill:#fff8e1;stroke:#f9a825;}
+  .bname{font-size:14px;fill:#263238;font-weight:600;}
+  .bio{font-size:12px;fill:#546e7a;}
+  .bnote{font-size:10px;fill:#90a4ae;}
+  .wire{stroke:#37474f;stroke-width:1.6;fill:none;}
+  .ctl{stroke:#1565c0;stroke-width:1.2;fill:none;}
+  .redw{stroke:#c62828;stroke-width:1.4;fill:none;}
+  .redd{stroke:#c62828;stroke-width:1.4;fill:none;stroke-dasharray:6 4;}
+  .lbl{font-size:11px;fill:#455a64;}
+  .lblr{font-size:11px;fill:#c62828;}
+  .lblb{font-size:11px;fill:#1565c0;}
+  .lblg{font-size:11px;fill:#2e7d32;}
+  .lbl,.lblr,.lblb,.lblg{paint-order:stroke;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;}
+  .bandname{font-size:13px;fill:#78909c;font-weight:600;}
+  .box:hover rect{stroke:#e91e63;stroke-width:2.4;}
+  .box:hover .bname{fill:#c2185b;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>exp11 数据通路（收束版 · 带端口）</h1>
+<div class="sub">比较转移 + 字节/半字访存 · 新增 blt/bge/bltu/bgeu 与 ld.b/ld.h/ld.bu/ld.hu/st.b/st.h；ls_type[4] 随流水线走，其余（前递 / 停摆 / 冲刷）同 exp10。</div>
+<div class="card">
+<div class="legend">
+  <span><i></i>数据主干</span>
+  <span class="c"><i></i>控制 / 地址配置</span>
+  <span class="r"><i></i>分支冲刷（cancel / 改道）</span>
+  <span class="d"><i></i>停顿反压（id_stall → allowin 链）</span>
+</div>
+<svg viewBox="0 0 1620 780" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#37474f"/></marker>
+    <marker id="arb" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1565c0"/></marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c62828"/></marker>
+  </defs>
+<rect x="24" y="118" width="506" height="120" rx="8" fill="#e3f2fd" opacity="0.5"/>
+<text class="bandname" x="277" y="112" text-anchor="middle">取指（preIF / IF）</text>
+<rect x="530" y="118" width="350" height="120" rx="8" fill="#e8f5e9" opacity="0.5"/>
+<text class="bandname" x="705" y="112" text-anchor="middle">译码 / 读寄存器</text>
+<rect x="880" y="118" width="270" height="120" rx="8" fill="#fff8e1" opacity="0.5"/>
+<text class="bandname" x="1015" y="112" text-anchor="middle">执行</text>
+<rect x="1150" y="118" width="320" height="120" rx="8" fill="#fce4ec" opacity="0.5"/>
+<text class="bandname" x="1310" y="112" text-anchor="middle">访存</text>
+<rect x="1470" y="118" width="126" height="120" rx="8" fill="#f3e5f5" opacity="0.5"/>
+<text class="bandname" x="1533" y="112" text-anchor="middle">写回</text>
+<path class="wire" d="M170,188 L200,188" marker-end="url(#ar)"/>
+<path class="wire" d="M340,188 L370,188" marker-end="url(#ar)"/>
+<path class="wire" d="M510,188 L540,188" marker-end="url(#ar)"/>
+<path class="wire" d="M680,188 L710,188" marker-end="url(#ar)"/>
+<path class="ctl" d="M640,226 L640,276 L950,276 L950,226" marker-end="url(#arb)"/>
+<path class="wire" d="M860,188 L890,188" marker-end="url(#ar)"/>
+<path class="wire" d="M1010,188 L1040,188" marker-end="url(#ar)"/>
+<path class="wire" d="M1140,188 L1170,188" marker-end="url(#ar)"/>
+<path class="wire" d="M1290,188 L1320,188" marker-end="url(#ar)"/>
+<path class="wire" d="M1450,188 L1480,188" marker-end="url(#ar)"/>
+<path class="wire" d="M100,226 L100,384" marker-end="url(#ar)"/>
+<path class="wire" d="M240,410 L460,410 L460,226" marker-end="url(#ar)"/>
+<path class="wire" d="M450,226 L450,384" marker-end="url(#ar)"/>
+<path class="wire" d="M495,226 L495,300 L830,300 L830,226" marker-end="url(#ar)"/>
+<path class="ctl" d="M600,226 L600,560" marker-end="url(#arb)"/>
+<path class="ctl" d="M590,226 L590,340 L410,340 L410,384" marker-end="url(#arb)"/>
+<path class="ctl" d="M660,226 L660,480 L790,480 L790,500" marker-end="url(#arb)"/>
+<path class="wire" d="M580,560 L580,268 L740,268 L740,226" marker-end="url(#ar)"/>
+<path class="wire" d="M560,598 L470,598 L470,456" marker-end="url(#ar)"/>
+<path class="wire" d="M1552,226 L1552,690 L724,690 L724,598 L700,598" marker-end="url(#ar)"/>
+<path class="ctl" d="M1090,226 L1090,384" marker-end="url(#arb)"/>
+<path class="ctl" d="M910,226 L910,340 L1140,340 L1140,384" marker-end="url(#arb)"/>
+<path class="wire" d="M1260,420 L1385,420 L1385,226" marker-end="url(#ar)"/>
+<path class="redw" d="M360,400 L348,400 L348,96 L100,96 L100,150" marker-end="url(#arr)"/>
+<path class="redw" d="M360,418 L355,418 L355,88 L270,88 L270,150" marker-end="url(#arr)"/>
+<path class="redw" d="M365,384 L365,80 L440,80 L440,150" marker-end="url(#arr)"/>
+<path class="redd" d="M760,522 L40,522 L40,205 L30,205" marker-end="url(#arr)"/>
+<path class="redd" d="M760,536 L255,536 L255,205 L200,205" marker-end="url(#arr)"/>
+<path class="redd" d="M760,550 L515,550 L515,205 L370,205" marker-end="url(#arr)"/>
+<path class="redd" d="M760,510 L730,510 L730,420 L500,420" marker-end="url(#arr)"/>
+<path class="redw" d="M970,226 L970,470 L820,470 L820,500" marker-end="url(#arr)"/>
+<path class="wire" d="M1060,226 L1060,252 L812,252 L812,226" marker-end="url(#ar)"/>
+<path class="wire" d="M1345,226 L1345,264 L784,264 L784,226" marker-end="url(#ar)"/>
+<path class="wire" d="M1508,226 L1508,284 L756,284 L756,226" marker-end="url(#ar)"/>
+<path class="ctl" d="M890,226 L890,420 L860,420" marker-end="url(#arb)"/>
+<path class="wire" d="M780,384 L780,356 L1200,356 L1200,226" marker-end="url(#ar)"/>
+<path class="redw" d="M700,430 L680,430 L680,490 L855,490 L855,500" marker-end="url(#arr)"/>
+<g class="box"><title>pre_if：PC 生成。入 2：pre_if_allowin（反压）；br_taken + br_target（④ 改道）。出 2：pc[32]+valid → if_req；en+addr[32] → 指令 RAM。复位入口 0x1BFFFFFC（entry−4）</title><rect class="bxbox" x="30" y="150" width="140" height="76" rx="10"/><text class="bname" x="100" y="181" text-anchor="middle">pre_if · PC 生成</text><text class="bio" x="100" y="201" text-anchor="middle">入 2 · 出 2</text></g>
+<g class="box"><title>if_req：缓存"请求已发出"的 PC，与 1 拍后回来的 rdata 配对。入 3：pre_if 的 pc/valid；br_taken（cancel ①②）；if_req_allowin。出 1：if_req_pc+valid → IF。br_taken 时 ① 不接收新请求 ② 不锁存 PC</title><rect class="bxbox" x="200" y="150" width="140" height="76" rx="10"/><text class="bname" x="270" y="181" text-anchor="middle">if_req · 取指缓冲</text><text class="bio" x="270" y="201" text-anchor="middle">入 3 · 出 1</text></g>
+<g class="box"><title>IF 寄存器：在 if_req_pc 与 rdata 配对的当拍锁存指令。入 4：rdata[32]；if_req_pc[32]；if_req_valid（经 ③ 门）；if_allowin + br_taken。出 3：if_inst[32] → ID；if_pc[32] → 分支判定 / 操作数选择；if_valid</title><rect class="bxbox" x="370" y="150" width="140" height="76" rx="10"/><text class="bname" x="440" y="181" text-anchor="middle">IF 寄存器</text><text class="bio" x="440" y="201" text-anchor="middle">入 4 · 出 3</text></g>
+<g class="box"><title>ID 译码：从 if_inst 展开全部控制信号（alu_op[12] / imm / 偏移 / 读口 / 写口 / 指令类型），内部是几十条译码与门。入 1 出 5</title><rect class="bxbox" x="540" y="150" width="140" height="76" rx="10"/><text class="bname" x="610" y="181" text-anchor="middle">ID 译码（组合）</text><text class="bio" x="610" y="201" text-anchor="middle">入 1 · 出 5</text></g>
+<g class="box"><title>操作数选择：src1 = PC（jirl/bl）| rj；src2 = imm | rkd。rj/rkd 先过三路前递 mux（EX 优先，其次 MEM，最后 WB；EX 是 load 时不可前递，改由停顿处理）。出 1：alu_src1/2 + 存储数据</title><rect class="bxbox" x="710" y="150" width="150" height="76" rx="10"/><text class="bname" x="785" y="181" text-anchor="middle">操作数选择（三路前递）</text><text class="bio" x="785" y="201" text-anchor="middle">入 6 · 出 1</text><text class="bnote" x="785" y="217" text-anchor="middle">EX/MEM/WB 前递优先，其次寄存器堆</text></g>
+<g class="box"><title>ID/EX：寄存 10 字段 + ls_type[4]（访存类型码，随流水线带到 MEM 供载入选择）；遇到 div/mod 仍会启动除法器</title><rect class="pipe" x="890" y="150" width="120" height="76" rx="10"/><text class="bname" x="950" y="181" text-anchor="middle">ID/EX 寄存器</text><text class="bio" x="950" y="201" text-anchor="middle">入 2 · 出 4</text><text class="bnote" x="950" y="217" text-anchor="middle">10 字段 + ls_type[4]</text></g>
+<g class="box"><title>ALU：单周期组合，22 种 op——新增 sll/srl/sra、mul/mulh/mulh.wu（三个组合乘法：取积低 32 位 / 有符号高 32 / 无符号高 32）；div/mod 不在 ALU，走 EX 的除法器</title><rect class="bxbox" x="1040" y="150" width="100" height="76" rx="10"/><text class="bname" x="1090" y="181" text-anchor="middle">ALU</text><text class="bio" x="1090" y="201" text-anchor="middle">入 1 · 出 3</text></g>
+<g class="box"><title>EX/MEM：寄存 6 字段 + ls_type[4]；输入结果 = ALU 结果 或 除法器 q/r（二选一）</title><rect class="pipe" x="1170" y="150" width="120" height="76" rx="10"/><text class="bname" x="1230" y="181" text-anchor="middle">EX/MEM 寄存器</text><text class="bio" x="1230" y="201" text-anchor="middle">入 2 · 出 1</text><text class="bnote" x="1230" y="217" text-anchor="middle">6 字段 + ls_type[4]</text></g>
+<g class="box"><title>按 mem_ls_type 从 32 位读回值里选：byte 用 addr[1:0] 移位、half 看 addr[1] 选高/低 16 位；ld.b/ld.h 符号扩展、ld.bu/ld.hu 零扩展、ld.w 全字</title><rect class="bxbox" x="1320" y="150" width="130" height="76" rx="10"/><text class="bname" x="1385" y="181" text-anchor="middle">MEM 取值 / 载入选择</text><text class="bio" x="1385" y="201" text-anchor="middle">入 2 · 出 2</text><text class="bnote" x="1385" y="217" text-anchor="middle">ls_type 选字节/半字</text></g>
+<g class="box"><title>MEM/WB：寄存 5 字段（valid / pc / gr_we / dest / value）；输出写回口与 debug_wb_* 探针</title><rect class="pipe" x="1480" y="150" width="118" height="76" rx="10"/><text class="bname" x="1539" y="181" text-anchor="middle">MEM/WB 寄存器</text><text class="bio" x="1539" y="201" text-anchor="middle">入 1 · 出 2</text><text class="bnote" x="1539" y="217" text-anchor="middle">5 字段</text></g>
+<g class="box"><title>指令 RAM（soc_bram 同步 RAM）：请求后 1 拍出数据；本设计只读（we 恒 0）</title><rect class="ram" x="60" y="384" width="180" height="72" rx="10"/><text class="bname" x="150" y="413" text-anchor="middle">指令 RAM（外部）</text><text class="bio" x="150" y="433" text-anchor="middle">入 1 · 出 1</text><text class="bnote" x="150" y="449" text-anchor="middle">1 拍延迟</text></g>
+<g class="box"><title>分支判定：beq/bne 判相等；新增 blt/bge/bltu/bgeu 判大小（有符号 $signed、无符号直接比）；br_target = if_pc+offs 或 rj+jirl_offs；受 if_valid 与 ~id_stall 门控。出 3 根 → 前端 ④改道 / ①②③取消</title><rect class="ctrlbox" x="360" y="384" width="140" height="72" rx="10"/><text class="bname" x="430" y="413" text-anchor="middle">分支判定（ID · 含比较）</text><text class="bio" x="430" y="433" text-anchor="middle">入 4 · 出 3</text></g>
+<g class="box"><title>冒险检测：① EX 里是 load 且被 ID 消费 → 停 1 拍；② EX 里是未算完的 div/mod 且被 ID 消费 → 等它离开 EX（结果经 MEM/WB 前递）。入 3：ID 源号+使用位；EX 条件；除法器 busy。出 4：反压 3 + 门控 1</title><rect class="ctrlbox" x="760" y="500" width="140" height="72" rx="10"/><text class="bname" x="830" y="529" text-anchor="middle">冒险检测（load-use / div）</text><text class="bio" x="830" y="549" text-anchor="middle">入 3 · 出 4</text></g>
+<g class="box"><title>寄存器堆：2 读 1 写；写口在 WB 拍末生效（所以 WB 撞车也要停 1 拍）</title><rect class="rf" x="560" y="560" width="140" height="72" rx="10"/><text class="bname" x="630" y="589" text-anchor="middle">寄存器堆</text><text class="bio" x="630" y="609" text-anchor="middle">入 2 · 出 2</text><text class="bnote" x="630" y="625" text-anchor="middle">2R1W</text></g>
+<g class="box"><title>数据 RAM：EX 发请求。写侧新增字节/半字：we 用“移位掩码”（st.b：0001&lt;&lt;addr[1:0]；st.h：0011&lt;&lt;{addr[1],0}），wdata 复制填满总线；ld 数据在 MEM 拍回来</title><rect class="ram" x="1080" y="384" width="180" height="72" rx="10"/><text class="bname" x="1170" y="413" text-anchor="middle">数据 RAM（外部）</text><text class="bio" x="1170" y="433" text-anchor="middle">入 2 · 出 1</text><text class="bnote" x="1170" y="449" text-anchor="middle">1 拍延迟</text></g>
+<g class="box"><title>恢复余数法除法器（EX 内）：{余数,商} 每拍左移、比较减除数；先取绝对值并记符号，32 拍后回正输出 q/r。busy 期间 EX 不前进</title><rect class="bxbox" x="700" y="384" width="160" height="72" rx="10"/><text class="bname" x="780" y="413" text-anchor="middle">除法器（32 拍）</text><text class="bio" x="780" y="433" text-anchor="middle">入 1 · 出 2</text><text class="bnote" x="780" y="449" text-anchor="middle">div / mod</text></g>
+<rect x="167" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="197" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="337" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="367" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="507" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="537" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="677" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="707" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="637" y="223" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="947" y="223" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="857" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="887" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1007" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1037" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1137" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1167" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1287" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1317" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1447" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1477" y="185" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="97" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="97" y="381" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="237" y="407" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="457" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="447" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="447" y="381" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="492" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="827" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="597" y="223" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="597" y="557" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="587" y="223" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="407" y="381" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="657" y="223" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="787" y="497" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="577" y="557" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="737" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="557" y="595" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="467" y="453" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1549" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="697" y="595" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1087" y="223" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="1087" y="381" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="907" y="223" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="1137" y="381" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="1257" y="417" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1382" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="357" y="397" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="97" y="147" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="357" y="415" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="267" y="147" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="362" y="381" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="437" y="147" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="757" y="519" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="27" y="202" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="757" y="533" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="197" y="202" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="757" y="547" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="367" y="202" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="757" y="507" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="497" y="417" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="967" y="223" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="817" y="497" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="1057" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="809" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1342" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="781" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1505" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="753" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="887" y="223" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="857" y="417" width="6" height="6" rx="1.5" fill="#1565c0"/>
+<rect x="777" y="381" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="1197" y="223" width="6" height="6" rx="1.5" fill="#37474f"/>
+<rect x="697" y="427" width="6" height="6" rx="1.5" fill="#c62828"/>
+<rect x="852" y="497" width="6" height="6" rx="1.5" fill="#c62828"/>
+<text class="lbl" x="185" y="182" text-anchor="middle">pc/valid</text>
+<text class="lbl" x="525" y="182" text-anchor="middle">inst[32]</text>
+<text class="lbl" x="695" y="182" text-anchor="middle">imm</text>
+<text class="lbl" x="875" y="182" text-anchor="middle">操作数</text>
+<text class="lbl" x="1155" y="182" text-anchor="middle">结果</text>
+<text class="lbl" x="1465" y="182" text-anchor="middle">mem_value</text>
+<text class="lbl" x="106" y="300" text-anchor="start">en + addr[32]</text>
+<text class="lbl" x="250" y="402" text-anchor="start">rdata[32]（1 拍）</text>
+<text class="lbl" x="486" y="310" text-anchor="start">if_pc[32]</text>
+<text class="lblb" x="500" y="356" text-anchor="end">类型 + 偏移</text>
+<text class="lblb" x="660" y="270" text-anchor="start">alu_op[12] + 控制位 + dest</text>
+<text class="lblb" x="606" y="330" text-anchor="start">读口地址 ×2</text>
+<text class="lblb" x="668" y="472" text-anchor="start">源寄存器号 + 使用位</text>
+<text class="lbl" x="545" y="262" text-anchor="end">rdata1/rdata2</text>
+<text class="lbl" x="478" y="520" text-anchor="start">rj/rkd 值</text>
+<text class="lbl" x="900" y="682" text-anchor="start">写回 we / waddr[5] / wdata[32]</text>
+<text class="lblb" x="1096" y="300" text-anchor="start">addr[32]（ALU 结果）</text>
+<text class="lblb" x="925" y="334" text-anchor="start">store 数据 + 访存控制</text>
+<text class="lbl" x="1268" y="352" text-anchor="start">rdata[32]（1 拍）</text>
+<text class="lblr" x="95" y="90" text-anchor="middle">④</text>
+<text class="lblr" x="265" y="90" text-anchor="middle">①②</text>
+<text class="lblr" x="435" y="90" text-anchor="middle">③</text>
+<text class="lblr" x="430" y="556" text-anchor="middle">停顿反压链（id_stall → allowin）</text>
+<text class="lblr" x="660" y="414" text-anchor="end">门控分支判定（~id_stall）</text>
+<text class="lblr" x="935" y="464" text-anchor="middle">load-use 检查（EX）</text>
+<text class="lbl" x="1050" y="246" text-anchor="end">前递 EX</text>
+<text class="lbl" x="1332" y="258" text-anchor="end">前递 MEM</text>
+<text class="lbl" x="1496" y="278" text-anchor="end">前递 WB</text>
+<text class="lblb" x="896" y="414" text-anchor="start">div/mod 指令 + 操作数</text>
+<text class="lbl" x="1005" y="348" text-anchor="start">div 结果（q / r）</text>
+<text class="lblr" x="674" y="422" text-anchor="end">busy → 停 EX</text>
+<text class="lblg" x="548" y="378" text-anchor="start">＋ blt / bge / bltu / bgeu</text>
+<text class="lblg" x="1096" y="372" text-anchor="start">＋ 6 条字节/半字访存</text>
+</svg>
+</div>
+<div class="card">
+<h3>模块端口明细（自动对照图上连接）</h3>
+<table>
+<tr><th>模块</th><th>入</th><th>出</th><th>图上接口明细（每条连接携带的信号）</th></tr>
+<tr><td>pre_if · PC 生成</td><td class="num">2</td><td class="num">2</td><td>入：br_taken + br_target（④ 改道）；id_stall 反压。出：pre_if_pc + pre_if_valid；en + addr[32]。</td></tr>
+<tr><td>if_req · 取指缓冲</td><td class="num">3</td><td class="num">1</td><td>入：pre_if_pc + pre_if_valid；（①② 取消请求 / PC）；id_stall 反压。出：if_req_pc + if_req_valid。</td></tr>
+<tr><td>IF 寄存器</td><td class="num">4</td><td class="num">3</td><td>入：if_req_pc + if_req_valid；rdata[32]（1 拍）；（③ 拦住进 IF）；id_stall 反压。出：if_inst[32]；if_pc[32]；if_pc[32]（jirl/bl 作 src1）。</td></tr>
+<tr><td>ID 译码（组合）</td><td class="num">1</td><td class="num">5</td><td>入：if_inst[32]。出：imm[32]；alu_op[12] + 控制位 + dest[5]；读口地址 ×2；指令类型 + 偏移；源寄存器号 + 使用位。</td></tr>
+<tr><td>操作数选择（三路前递）<br><span class="sub">EX/MEM/WB 前递优先，其次寄存器堆</span></td><td class="num">6</td><td class="num">1</td><td>入：imm[32]；if_pc[32]（jirl/bl 作 src1）；rdata1 / rdata2；前递 EX（ex_alu_result）；前递 MEM（mem_value）；前递 WB（wb_result）。出：alu_src1/2 + 存储数据。</td></tr>
+<tr><td>ID/EX 寄存器<br><span class="sub">10 字段 + ls_type[4]</span></td><td class="num">2</td><td class="num">4</td><td>入：alu_op[12] + 控制位 + dest[5]；alu_src1/2 + 存储数据。出：alu_op + src1 + src2；store 数据 + 访存控制；ex 写目标 + res_from_mem（load-use 检查）；div/mod 指令 + 操作数。</td></tr>
+<tr><td>ALU</td><td class="num">1</td><td class="num">3</td><td>入：alu_op + src1 + src2。出：alu_result[32]；addr[32]（ALU 结果）；前递 EX（ex_alu_result）。</td></tr>
+<tr><td>EX/MEM 寄存器<br><span class="sub">6 字段 + ls_type[4]</span></td><td class="num">2</td><td class="num">1</td><td>入：alu_result[32]；div/mod 结果（q / r）。出：mem_alu_result。</td></tr>
+<tr><td>MEM 取值 / 载入选择<br><span class="sub">ls_type 选字节/半字</span></td><td class="num">2</td><td class="num">2</td><td>入：mem_alu_result；rdata[32]（1 拍）。出：mem_value[32]；前递 MEM（mem_value）。</td></tr>
+<tr><td>MEM/WB 寄存器<br><span class="sub">5 字段</span></td><td class="num">1</td><td class="num">2</td><td>入：mem_value[32]。出：写回 we / waddr / wdata；前递 WB（wb_result）。</td></tr>
+<tr><td>指令 RAM（外部）<br><span class="sub">1 拍延迟</span></td><td class="num">1</td><td class="num">1</td><td>入：en + addr[32]。出：rdata[32]（1 拍）。</td></tr>
+<tr><td>分支判定（ID · 含比较）</td><td class="num">4</td><td class="num">3</td><td>入：if_pc[32]；指令类型 + 偏移；rj / rkd 值；~id_stall 门控（停顿期间不判分支）。出：br_taken + br_target（④ 改道）；（①② 取消请求 / PC）；（③ 拦住进 IF）。</td></tr>
+<tr><td>冒险检测（load-use / div）</td><td class="num">3</td><td class="num">4</td><td>入：源寄存器号 + 使用位；ex 写目标 + res_from_mem（load-use 检查）；busy（div 未算完）。出：id_stall 反压；id_stall 反压；id_stall 反压；~id_stall 门控（停顿期间不判分支）。</td></tr>
+<tr><td>寄存器堆<br><span class="sub">2R1W</span></td><td class="num">2</td><td class="num">2</td><td>入：读口地址 ×2；写回 we / waddr / wdata。出：rdata1 / rdata2；rj / rkd 值。</td></tr>
+<tr><td>数据 RAM（外部）<br><span class="sub">1 拍延迟</span></td><td class="num">2</td><td class="num">1</td><td>入：addr[32]（ALU 结果）；store 数据 + 访存控制。出：rdata[32]（1 拍）。</td></tr>
+<tr><td>除法器（32 拍）<br><span class="sub">div / mod</span></td><td class="num">1</td><td class="num">2</td><td>入：div/mod 指令 + 操作数。出：div/mod 结果（q / r）；busy（div 未算完）。</td></tr>
+</table>
+<p class="sub" style="margin-top:8px;">口径：入/出 = 图上画出的引脚数（一条连接 = 一个端口）；clk / resetn 全局省略；位宽只标主要总线。</p>
+</div>
+<div class="card">
+<h3>怎么看</h3>
+
+<ol>
+<li><b>比较转移（+4 条）</b>：blt/bge/bltu/bgeu 都在 ID 判定——有符号用 $signed 比较、无符号直接比（新增 rj_lt_rd_s / rj_lt_rd_u 两个比较器），和 beq/bne 共用同一套 cancel 冲刷。</li>
+<li><b>字节/半字访存（+6 条）</b>：ld.b/ld.h/ld.bu/ld.hu/st.b/st.h——写侧用“移位掩码 + 复制数据”（st.b：0001 按 addr[1:0] 移位；st.h：0011 按 addr[1] 移位；wdata 复制填满总线），读侧在 MEM 拍按地址选字节/半字并做符号/零扩展。</li>
+<li><b>ls_type[4] 随流水线</b>：0 无 / 1 st.b / 2 st.h / 3 st.w / 4 ld.b / 5 ld.h / 6 ld.w / 7 ld.bu / 8 ld.hu——替代原来的单个 mem_we，从 ID 一路带到 MEM。</li>
+<li>其余同 exp10：三路前递、load-use / div 停摆、①②③④ 冲刷。</li>
+</ol>
+<p class="sub">更细颗粒度：<a href="web/viewer.html">DigitalJS 全量图（可钻模块 / 悬停高亮）</a>。口径：入/出 = 图上引脚数；clk / resetn 全局省略。</p>
+
+</div>
+</div>
+</body>
+</html>

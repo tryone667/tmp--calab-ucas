@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"/>
+<title>exp11 数据通路（收束版 · 布线可拖版）</title>
+<link rel="icon" href="data:,"/>
+<style>
+  body{margin:0;background:#f4f6f8;color:#263238;font-family:"Segoe UI","Microsoft YaHei",sans-serif;}
+  .wrap{max-width:1680px;margin:0 auto;padding:18px 22px 44px;}
+  h1{font-size:21px;margin:6px 0 4px;}
+  h3{font-size:15px;margin:2px 0 10px;}
+  .sub{font-size:13px;color:#607d8b;line-height:1.7;}
+  .card{background:#fff;border:1px solid #e0e6ea;border-radius:10px;padding:14px 16px;margin-top:14px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;font-size:12.5px;color:#455a64;margin:2px 0 10px;}
+  .legend i{display:inline-block;width:26px;border-top:3px solid #37474f;vertical-align:middle;margin-right:6px;}
+  .legend .c i{border-top-color:#1565c0;}
+  .legend .r i{border-top-color:#c62828;}
+  .legend .d i{border-top-color:#c62828;border-top-style:dashed;}
+  table{border-collapse:collapse;width:100%;font-size:12.8px;}
+  th,td{border:1px solid #e3e9ee;padding:6px 9px;text-align:left;vertical-align:top;}
+  th{background:#f7fafc;color:#37474f;font-weight:600;}
+  td:first-child{white-space:nowrap;font-weight:600;}
+  td.num{text-align:center;white-space:nowrap;}
+  code{background:#f2f5f7;padding:0 4px;border-radius:3px;font-family:Consolas,monospace;font-size:12px;}
+  ol{font-size:13.2px;color:#37474f;line-height:1.85;margin:6px 0 4px;padding-left:22px;}
+  a{color:#1565c0;}
+  svg{width:100%;height:auto;display:block;}
+  text{font-family:Consolas,"Microsoft YaHei",monospace;}
+  .bxbox{fill:#f5f7fa;stroke:#90a4ae;stroke-width:1.4;}
+  .ram{fill:#fff3e0;stroke:#ef6c00;}
+  .rf{fill:#e8f5e9;stroke:#43a047;}
+  .pipe{fill:#e3f2fd;stroke:#1e88e5;}
+  .ctrlbox{fill:#fff8e1;stroke:#f9a825;}
+  .bname{font-size:14px;fill:#263238;font-weight:600;}
+  .bio{font-size:12px;fill:#546e7a;}
+  .bnote{font-size:10px;fill:#90a4ae;}
+  .wire{stroke:#37474f;stroke-width:1.6;fill:none;}
+  .ctl{stroke:#1565c0;stroke-width:1.2;fill:none;}
+  .redw{stroke:#c62828;stroke-width:1.4;fill:none;}
+  .redd{stroke:#c62828;stroke-width:1.4;fill:none;stroke-dasharray:6 4;}
+  .lbl{font-size:11px;fill:#455a64;}
+  .lblr{font-size:11px;fill:#c62828;}
+  .lblb{font-size:11px;fill:#1565c0;}
+  .lblg{font-size:11px;fill:#2e7d32;}
+  .lbl,.lblr,.lblb,.lblg{paint-order:stroke;stroke:#ffffff;stroke-width:3px;stroke-linejoin:round;}
+  .bandname{font-size:13px;fill:#78909c;font-weight:600;}
+  .box:hover rect{stroke:#e91e63;stroke-width:2.4;}
+  .box:hover .bname{fill:#c2185b;}
+
+  #cv{width:100%;height:72vh;display:block;background:#fbfcfe;border-radius:8px;border:1px solid #e3e9ee;touch-action:none;}
+  .blk{cursor:grab;}
+  .blk:active{cursor:grabbing;}
+  .conn{fill:none;}
+  .conn.hl{stroke:#e91e63 !important;stroke-width:2.6 !important;}
+  .toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:2px 0 10px;flex-wrap:wrap;}
+  .toolbar button{padding:4px 12px;margin-left:6px;cursor:pointer;border:1px solid #c9d4dd;background:#fff;border-radius:6px;font-size:13px;}
+  .toolbar button:hover{background:#f1f6fa;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="toolbar">
+  <div><h1 style="margin:0 0 2px;">exp11 数据通路（收束版 · 布线可拖版）</h1><div class="sub">可拖动布线图：模块随手拖，连线自动避让模块框（不穿过框图）、实时重算；表格与计数依旧自动生成。（版本三）</div></div>
+  <div><span class="sub">拖动模块 / 滚轮缩放 / 空白拖动平移 / 悬停高亮连线（连线悬停看信号）</span>
+       <button id="route">线型：直角</button>
+       <button id="fit">适配视图</button><button id="reset">复位布局</button></div>
+</div>
+<div class="card" style="padding:10px;">
+<div class="legend">
+  <span><i></i>数据主干</span>
+  <span class="c"><i></i>控制 / 地址配置</span>
+  <span class="r"><i></i>分支冲刷（cancel / 改道）</span>
+  <span class="d"><i></i>停顿反压（id_stall → allowin 链）</span>
+</div>
+<svg id="cv">
+  <defs><marker id="ar" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#37474f"/></marker>
+    <marker id="arb" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1565c0"/></marker>
+    <marker id="arr" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#c62828"/></marker></defs>
+  <g id="world"></g>
+</svg>
+</div>
+<div class="card">
+<h3>模块端口明细（自动对照图上连接）</h3>
+<table>
+<tr><th>模块</th><th>入</th><th>出</th><th>图上接口明细（每条连接携带的信号）</th></tr>
+<tr><td>pre_if · PC 生成</td><td class="num">2</td><td class="num">2</td><td>入：br_taken + br_target（④ 改道）；id_stall 反压。出：pre_if_pc + pre_if_valid；en + addr[32]。</td></tr>
+<tr><td>if_req · 取指缓冲</td><td class="num">3</td><td class="num">1</td><td>入：pre_if_pc + pre_if_valid；（①② 取消请求 / PC）；id_stall 反压。出：if_req_pc + if_req_valid。</td></tr>
+<tr><td>IF 寄存器</td><td class="num">4</td><td class="num">3</td><td>入：if_req_pc + if_req_valid；rdata[32]（1 拍）；（③ 拦住进 IF）；id_stall 反压。出：if_inst[32]；if_pc[32]；if_pc[32]（jirl/bl 作 src1）。</td></tr>
+<tr><td>ID 译码（组合）</td><td class="num">1</td><td class="num">5</td><td>入：if_inst[32]。出：imm[32]；alu_op[12] + 控制位 + dest[5]；读口地址 ×2；指令类型 + 偏移；源寄存器号 + 使用位。</td></tr>
+<tr><td>操作数选择（三路前递）<br><span class="sub">EX/MEM/WB 前递优先，其次寄存器堆</span></td><td class="num">6</td><td class="num">1</td><td>入：imm[32]；if_pc[32]（jirl/bl 作 src1）；rdata1 / rdata2；前递 EX（ex_alu_result）；前递 MEM（mem_value）；前递 WB（wb_result）。出：alu_src1/2 + 存储数据。</td></tr>
+<tr><td>ID/EX 寄存器<br><span class="sub">10 字段 + ls_type[4]</span></td><td class="num">2</td><td class="num">4</td><td>入：alu_op[12] + 控制位 + dest[5]；alu_src1/2 + 存储数据。出：alu_op + src1 + src2；store 数据 + 访存控制；ex 写目标 + res_from_mem（load-use 检查）；div/mod 指令 + 操作数。</td></tr>
+<tr><td>ALU</td><td class="num">1</td><td class="num">3</td><td>入：alu_op + src1 + src2。出：alu_result[32]；addr[32]（ALU 结果）；前递 EX（ex_alu_result）。</td></tr>
+<tr><td>EX/MEM 寄存器<br><span class="sub">6 字段 + ls_type[4]</span></td><td class="num">2</td><td class="num">1</td><td>入：alu_result[32]；div/mod 结果（q / r）。出：mem_alu_result。</td></tr>
+<tr><td>MEM 取值 / 载入选择<br><span class="sub">ls_type 选字节/半字</span></td><td class="num">2</td><td class="num">2</td><td>入：mem_alu_result；rdata[32]（1 拍）。出：mem_value[32]；前递 MEM（mem_value）。</td></tr>
+<tr><td>MEM/WB 寄存器<br><span class="sub">5 字段</span></td><td class="num">1</td><td class="num">2</td><td>入：mem_value[32]。出：写回 we / waddr / wdata；前递 WB（wb_result）。</td></tr>
+<tr><td>指令 RAM（外部）<br><span class="sub">1 拍延迟</span></td><td class="num">1</td><td class="num">1</td><td>入：en + addr[32]。出：rdata[32]（1 拍）。</td></tr>
+<tr><td>分支判定（ID · 含比较）</td><td class="num">4</td><td class="num">3</td><td>入：if_pc[32]；指令类型 + 偏移；rj / rkd 值；~id_stall 门控（停顿期间不判分支）。出：br_taken + br_target（④ 改道）；（①② 取消请求 / PC）；（③ 拦住进 IF）。</td></tr>
+<tr><td>冒险检测（load-use / div）</td><td class="num">3</td><td class="num">4</td><td>入：源寄存器号 + 使用位；ex 写目标 + res_from_mem（load-use 检查）；busy（div 未算完）。出：id_stall 反压；id_stall 反压；id_stall 反压；~id_stall 门控（停顿期间不判分支）。</td></tr>
+<tr><td>寄存器堆<br><span class="sub">2R1W</span></td><td class="num">2</td><td class="num">2</td><td>入：读口地址 ×2；写回 we / waddr / wdata。出：rdata1 / rdata2；rj / rkd 值。</td></tr>
+<tr><td>数据 RAM（外部）<br><span class="sub">1 拍延迟</span></td><td class="num">2</td><td class="num">1</td><td>入：addr[32]（ALU 结果）；store 数据 + 访存控制。出：rdata[32]（1 拍）。</td></tr>
+<tr><td>除法器（32 拍）<br><span class="sub">div / mod</span></td><td class="num">1</td><td class="num">2</td><td>入：div/mod 指令 + 操作数。出：div/mod 结果（q / r）；busy（div 未算完）。</td></tr>
+</table>
+<p class="sub" style="margin-top:8px;">口径：入/出 = 图上画出的引脚数（一条连接 = 一个端口）；clk / resetn 全局省略；位宽只标主要总线。</p>
+</div>
+<div class="card">
+<h3>怎么看</h3>
+
+<ol>
+<li><b>比较转移（+4 条）</b>：blt/bge/bltu/bgeu 都在 ID 判定——有符号用 $signed 比较、无符号直接比（新增 rj_lt_rd_s / rj_lt_rd_u 两个比较器），和 beq/bne 共用同一套 cancel 冲刷。</li>
+<li><b>字节/半字访存（+6 条）</b>：ld.b/ld.h/ld.bu/ld.hu/st.b/st.h——写侧用“移位掩码 + 复制数据”（st.b：0001 按 addr[1:0] 移位；st.h：0011 按 addr[1] 移位；wdata 复制填满总线），读侧在 MEM 拍按地址选字节/半字并做符号/零扩展。</li>
+<li><b>ls_type[4] 随流水线</b>：0 无 / 1 st.b / 2 st.h / 3 st.w / 4 ld.b / 5 ld.h / 6 ld.w / 7 ld.bu / 8 ld.hu——替代原来的单个 mem_we，从 ID 一路带到 MEM。</li>
+<li>其余同 exp10：三路前递、load-use / div 停摆、①②③④ 冲刷。</li>
+</ol>
+<p class="sub">更细颗粒度：<a href="web/viewer.html">DigitalJS 全量图（可钻模块 / 悬停高亮）</a>。口径：入/出 = 图上引脚数；clk / resetn 全局省略。</p>
+
+</div>
+<script>
+const BLOCKS = [{"id": "preif", "x": 30, "y": 150, "w": 140, "h": 76, "cls": "bxbox", "name": "pre_if · PC 生成", "note": "", "tip": "pre_if：PC 生成。入 2：pre_if_allowin（反压）；br_taken + br_target（④ 改道）。出 2：pc[32]+valid → if_req；en+addr[32] → 指令 RAM。复位入口 0x1BFFFFFC（entry−4）", "badge": "入 2 · 出 2"}, {"id": "ifreq", "x": 200, "y": 150, "w": 140, "h": 76, "cls": "bxbox", "name": "if_req · 取指缓冲", "note": "", "tip": "if_req：缓存\"请求已发出\"的 PC，与 1 拍后回来的 rdata 配对。入 3：pre_if 的 pc/valid；br_taken（cancel ①②）；if_req_allowin。出 1：if_req_pc+valid → IF。br_taken 时 ① 不接收新请求 ② 不锁存 PC", "badge": "入 3 · 出 1"}, {"id": "ifr", "x": 370, "y": 150, "w": 140, "h": 76, "cls": "bxbox", "name": "IF 寄存器", "note": "", "tip": "IF 寄存器：在 if_req_pc 与 rdata 配对的当拍锁存指令。入 4：rdata[32]；if_req_pc[32]；if_req_valid（经 ③ 门）；if_allowin + br_taken。出 3：if_inst[32] → ID；if_pc[32] → 分支判定 / 操作数选择；if_valid", "badge": "入 4 · 出 3"}, {"id": "id", "x": 540, "y": 150, "w": 140, "h": 76, "cls": "bxbox", "name": "ID 译码（组合）", "note": "", "tip": "ID 译码：从 if_inst 展开全部控制信号（alu_op[12] / imm / 偏移 / 读口 / 写口 / 指令类型），内部是几十条译码与门。入 1 出 5", "badge": "入 1 · 出 5"}, {"id": "opsel", "x": 710, "y": 150, "w": 150, "h": 76, "cls": "bxbox", "name": "操作数选择（三路前递）", "note": "EX/MEM/WB 前递优先，其次寄存器堆", "tip": "操作数选择：src1 = PC（jirl/bl）| rj；src2 = imm | rkd。rj/rkd 先过三路前递 mux（EX 优先，其次 MEM，最后 WB；EX 是 load 时不可前递，改由停顿处理）。出 1：alu_src1/2 + 存储数据", "badge": "入 6 · 出 1"}, {"id": "idex", "x": 890, "y": 150, "w": 120, "h": 76, "cls": "pipe", "name": "ID/EX 寄存器", "note": "10 字段 + ls_type[4]", "tip": "ID/EX：寄存 10 字段 + ls_type[4]（访存类型码，随流水线带到 MEM 供载入选择）；遇到 div/mod 仍会启动除法器", "badge": "入 2 · 出 4"}, {"id": "alu", "x": 1040, "y": 150, "w": 100, "h": 76, "cls": "bxbox", "name": "ALU", "note": "", "tip": "ALU：单周期组合，22 种 op——新增 sll/srl/sra、mul/mulh/mulh.wu（三个组合乘法：取积低 32 位 / 有符号高 32 / 无符号高 32）；div/mod 不在 ALU，走 EX 的除法器", "badge": "入 1 · 出 3"}, {"id": "exmem", "x": 1170, "y": 150, "w": 120, "h": 76, "cls": "pipe", "name": "EX/MEM 寄存器", "note": "6 字段 + ls_type[4]", "tip": "EX/MEM：寄存 6 字段 + ls_type[4]；输入结果 = ALU 结果 或 除法器 q/r（二选一）", "badge": "入 2 · 出 1"}, {"id": "memsel", "x": 1320, "y": 150, "w": 130, "h": 76, "cls": "bxbox", "name": "MEM 取值 / 载入选择", "note": "ls_type 选字节/半字", "tip": "按 mem_ls_type 从 32 位读回值里选：byte 用 addr[1:0] 移位、half 看 addr[1] 选高/低 16 位；ld.b/ld.h 符号扩展、ld.bu/ld.hu 零扩展、ld.w 全字", "badge": "入 2 · 出 2"}, {"id": "memwb", "x": 1480, "y": 150, "w": 118, "h": 76, "cls": "pipe", "name": "MEM/WB 寄存器", "note": "5 字段", "tip": "MEM/WB：寄存 5 字段（valid / pc / gr_we / dest / value）；输出写回口与 debug_wb_* 探针", "badge": "入 1 · 出 2"}, {"id": "instram", "x": 60, "y": 384, "w": 180, "h": 72, "cls": "ram", "name": "指令 RAM（外部）", "note": "1 拍延迟", "tip": "指令 RAM（soc_bram 同步 RAM）：请求后 1 拍出数据；本设计只读（we 恒 0）", "badge": "入 1 · 出 1"}, {"id": "brbr", "x": 360, "y": 384, "w": 140, "h": 72, "cls": "ctrlbox", "name": "分支判定（ID · 含比较）", "note": "", "tip": "分支判定：beq/bne 判相等；新增 blt/bge/bltu/bgeu 判大小（有符号 $signed、无符号直接比）；br_target = if_pc+offs 或 rj+jirl_offs；受 if_valid 与 ~id_stall 门控。出 3 根 → 前端 ④改道 / ①②③取消", "badge": "入 4 · 出 3"}, {"id": "haz", "x": 760, "y": 500, "w": 140, "h": 72, "cls": "ctrlbox", "name": "冒险检测（load-use / div）", "note": "", "tip": "冒险检测：① EX 里是 load 且被 ID 消费 → 停 1 拍；② EX 里是未算完的 div/mod 且被 ID 消费 → 等它离开 EX（结果经 MEM/WB 前递）。入 3：ID 源号+使用位；EX 条件；除法器 busy。出 4：反压 3 + 门控 1", "badge": "入 3 · 出 4"}, {"id": "rf", "x": 560, "y": 560, "w": 140, "h": 72, "cls": "rf", "name": "寄存器堆", "note": "2R1W", "tip": "寄存器堆：2 读 1 写；写口在 WB 拍末生效（所以 WB 撞车也要停 1 拍）", "badge": "入 2 · 出 2"}, {"id": "dram", "x": 1080, "y": 384, "w": 180, "h": 72, "cls": "ram", "name": "数据 RAM（外部）", "note": "1 拍延迟", "tip": "数据 RAM：EX 发请求。写侧新增字节/半字：we 用“移位掩码”（st.b：0001<<addr[1:0]；st.h：0011<<{addr[1],0}），wdata 复制填满总线；ld 数据在 MEM 拍回来", "badge": "入 2 · 出 1"}, {"id": "div", "x": 700, "y": 384, "w": 160, "h": 72, "cls": "bxbox", "name": "除法器（32 拍）", "note": "div / mod", "tip": "恢复余数法除法器（EX 内）：{余数,商} 每拍左移、比较减除数；先取绝对值并记符号，32 拍后回正输出 q/r。busy 期间 EX 不前进", "badge": "入 1 · 出 2"}];
+const CONNS = [{"a": ["preif", "r", 38], "b": ["ifreq", "l", 38], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "pre_if_pc + pre_if_valid"}, {"a": ["ifreq", "r", 38], "b": ["ifr", "l", 38], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "if_req_pc + if_req_valid"}, {"a": ["ifr", "r", 38], "b": ["id", "l", 38], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "if_inst[32]"}, {"a": ["id", "r", 38], "b": ["opsel", "l", 38], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "imm[32]"}, {"a": ["id", "b", 100], "b": ["idex", "b", 60], "cls": "ctl", "mk": "arb", "col": "#1565c0", "sig": "alu_op[12] + 控制位 + dest[5]"}, {"a": ["opsel", "r", 38], "b": ["idex", "l", 38], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "alu_src1/2 + 存储数据"}, {"a": ["idex", "r", 38], "b": ["alu", "l", 38], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "alu_op + src1 + src2"}, {"a": ["alu", "r", 38], "b": ["exmem", "l", 38], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "alu_result[32]"}, {"a": ["exmem", "r", 38], "b": ["memsel", "l", 38], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "mem_alu_result"}, {"a": ["memsel", "r", 38], "b": ["memwb", "l", 38], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "mem_value[32]"}, {"a": ["preif", "b", 70], "b": ["instram", "t", 40], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "en + addr[32]"}, {"a": ["instram", "r", 26], "b": ["ifr", "b", 90], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "rdata[32]（1 拍）"}, {"a": ["ifr", "b", 80], "b": ["brbr", "t", 90], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "if_pc[32]"}, {"a": ["ifr", "b", 125], "b": ["opsel", "b", 120], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "if_pc[32]（jirl/bl 作 src1）"}, {"a": ["id", "b", 60], "b": ["rf", "t", 40], "cls": "ctl", "mk": "arb", "col": "#1565c0", "sig": "读口地址 ×2"}, {"a": ["id", "b", 50], "b": ["brbr", "t", 50], "cls": "ctl", "mk": "arb", "col": "#1565c0", "sig": "指令类型 + 偏移"}, {"a": ["id", "b", 120], "b": ["haz", "t", 30], "cls": "ctl", "mk": "arb", "col": "#1565c0", "sig": "源寄存器号 + 使用位"}, {"a": ["rf", "t", 20], "b": ["opsel", "b", 30], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "rdata1 / rdata2"}, {"a": ["rf", "l", 38], "b": ["brbr", "b", 110], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "rj / rkd 值"}, {"a": ["memwb", "b", 72], "b": ["rf", "r", 38], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "写回 we / waddr / wdata"}, {"a": ["alu", "b", 50], "b": ["dram", "t", 10], "cls": "ctl", "mk": "arb", "col": "#1565c0", "sig": "addr[32]（ALU 结果）"}, {"a": ["idex", "b", 20], "b": ["dram", "t", 60], "cls": "ctl", "mk": "arb", "col": "#1565c0", "sig": "store 数据 + 访存控制"}, {"a": ["dram", "r", 36], "b": ["memsel", "b", 65], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "rdata[32]（1 拍）"}, {"a": ["brbr", "l", 16], "b": ["preif", "t", 70], "cls": "redw", "mk": "arr", "col": "#c62828", "sig": "br_taken + br_target（④ 改道）"}, {"a": ["brbr", "l", 34], "b": ["ifreq", "t", 70], "cls": "redw", "mk": "arr", "col": "#c62828", "sig": "（①② 取消请求 / PC）"}, {"a": ["brbr", "t", 5], "b": ["ifr", "t", 70], "cls": "redw", "mk": "arr", "col": "#c62828", "sig": "（③ 拦住进 IF）"}, {"a": ["haz", "l", 22], "b": ["preif", "l", 55], "cls": "redd", "mk": "arr", "col": "#c62828", "sig": "id_stall 反压"}, {"a": ["haz", "l", 36], "b": ["ifreq", "l", 55], "cls": "redd", "mk": "arr", "col": "#c62828", "sig": "id_stall 反压"}, {"a": ["haz", "l", 50], "b": ["ifr", "l", 55], "cls": "redd", "mk": "arr", "col": "#c62828", "sig": "id_stall 反压"}, {"a": ["haz", "l", 10], "b": ["brbr", "r", 36], "cls": "redd", "mk": "arr", "col": "#c62828", "sig": "~id_stall 门控（停顿期间不判分支）"}, {"a": ["idex", "b", 80], "b": ["haz", "t", 60], "cls": "redw", "mk": "arr", "col": "#c62828", "sig": "ex 写目标 + res_from_mem（load-use 检查）"}, {"a": ["alu", "b", 20], "b": ["opsel", "b", 102], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "前递 EX（ex_alu_result）"}, {"a": ["memsel", "b", 25], "b": ["opsel", "b", 74], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "前递 MEM（mem_value）"}, {"a": ["memwb", "b", 28], "b": ["opsel", "b", 46], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "前递 WB（wb_result）"}, {"a": ["idex", "b", 0], "b": ["div", "r", 36], "cls": "ctl", "mk": "arb", "col": "#1565c0", "sig": "div/mod 指令 + 操作数"}, {"a": ["div", "t", 80], "b": ["exmem", "b", 30], "cls": "wire", "mk": "ar", "col": "#37474f", "sig": "div/mod 结果（q / r）"}, {"a": ["div", "l", 46], "b": ["haz", "t", 95], "cls": "redw", "mk": "arr", "col": "#c62828", "sig": "busy（div 未算完）"}];
+
+const NS = 'http://www.w3.org/2000/svg';
+const svg = document.getElementById('cv');
+const world = document.getElementById('world');
+const blkMap = {}, wireList = [];
+const INIT = BLOCKS.map(function(b){ return {id: b.id, x: b.x, y: b.y}; });
+let view = {tx: 0, ty: 0, k: 1};
+let drag = null;
+let roundMode = false;
+
+function dir(side){ return side === 'r' ? [1,0] : side === 'l' ? [-1,0] : side === 't' ? [0,-1] : [0,1]; }
+function portPos(b, side, off){
+  if (side === 'r') return [b.x + b.w, b.y + off];
+  if (side === 'l') return [b.x, b.y + off];
+  if (side === 't') return [b.x + off, b.y];
+  return [b.x + off, b.y + b.h];
+}
+const G = 12;    // 布线网格尺寸
+const PAD = 6;   // 模块框外扩的安全边距
+let O = null;    // 障碍网格（每次重算前重建）
+function buildObstacles(){
+  let minx = 1e9, miny = 1e9, maxx = -1e9, maxy = -1e9;
+  BLOCKS.forEach(function(b){
+    minx = Math.min(minx, b.x); miny = Math.min(miny, b.y);
+    maxx = Math.max(maxx, b.x + b.w); maxy = Math.max(maxy, b.y + b.h);
+  });
+  O = {minx: minx - 96, miny: miny - 96, maxx: maxx + 96, maxy: maxy + 96};
+  O.cols = Math.ceil((O.maxx - O.minx) / G);
+  O.rows = Math.ceil((O.maxy - O.miny) / G);
+  O.blocked = new Uint8Array(O.cols * O.rows);
+  BLOCKS.forEach(function(b){
+    const c0 = Math.max(0, Math.floor((b.x - PAD - O.minx) / G));
+    const c1 = Math.min(O.cols - 1, Math.ceil((b.x + b.w + PAD - O.minx) / G));
+    const r0 = Math.max(0, Math.floor((b.y - PAD - O.miny) / G));
+    const r1 = Math.min(O.rows - 1, Math.ceil((b.y + b.h + PAD - O.miny) / G));
+    for (let r = r0; r <= r1; r++) {
+      for (let c = c0; c <= c1; c++) {
+        const cx = O.minx + (c + 0.5) * G, cy = O.miny + (r + 0.5) * G;
+        if (cx > b.x - PAD && cx < b.x + b.w + PAD && cy > b.y - PAD && cy < b.y + b.h + PAD) {
+          O.blocked[r * O.cols + c] = 1;
+        }
+      }
+    }
+  });
+}
+function cellOf(p){
+  let c = Math.floor((p[0] - O.minx) / G), r = Math.floor((p[1] - O.miny) / G);
+  c = Math.max(0, Math.min(O.cols - 1, c)); r = Math.max(0, Math.min(O.rows - 1, r));
+  return r * O.cols + c;
+}
+function routeCore(A, B){
+  const cols = O.cols, rows = O.rows, blocked = O.blocked;
+  const s = cellOf(A), t = cellOf(B);
+  blocked[s] = 0; blocked[t] = 0;
+  const ncell = cols * rows;
+  const NS = ncell * 4;              // 状态 = (格子, 方向)，转弯代价按方向变化计
+  const g = new Float32Array(NS); g.fill(Infinity);
+  const from = new Int32Array(NS); from.fill(-1);
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+  const heap = [];
+  function push(f, id){
+    heap.push([f, id]);
+    let i = heap.length - 1;
+    while (i > 0) {
+      const p = (i - 1) >> 1;
+      if (heap[p][0] <= heap[i][0]) break;
+      const tmp = heap[p]; heap[p] = heap[i]; heap[i] = tmp; i = p;
+    }
+  }
+  function pop(){
+    const top = heap[0], last = heap.pop();
+    if (heap.length) {
+      heap[0] = last;
+      let i = 0;
+      for (;;) {
+        const l = 2 * i + 1, r = l + 1;
+        let m = i;
+        if (l < heap.length && heap[l][0] < heap[m][0]) m = l;
+        if (r < heap.length && heap[r][0] < heap[m][0]) m = r;
+        if (m === i) break;
+        const tmp = heap[m]; heap[m] = heap[i]; heap[i] = tmp; i = m;
+      }
+    }
+    return top;
+  }
+  const tc = t % cols, tr = (t - tc) / cols;
+  function hh(id){
+    const cell = id >> 2;
+    const c = cell % cols, r = (cell - c) / cols;
+    return Math.abs(c - tc) + Math.abs(r - tr);
+  }
+  for (let d = 0; d < 4; d++) {
+    const st = s * 4 + d;
+    g[st] = 0;
+    push(hh(st), st);
+  }
+  let best = -1;
+  let guard = NS * 4;
+  while (heap.length && guard-- > 0) {
+    const cur = pop(), sid = cur[1];
+    if (cur[0] > g[sid] + hh(sid) + 0.001) continue;
+    const cell = sid >> 2, d = sid & 3;
+    if (cell === t) { best = sid; break; }
+    const c = cell % cols, r = (cell - c) / cols;
+    for (let e = 0; e < 4; e++) {
+      const nc = c + dirs[e][0], nr = r + dirs[e][1];
+      if (nc < 0 || nr < 0 || nc >= cols || nr >= rows) continue;
+      const ncell2 = nr * cols + nc;
+      if (blocked[ncell2]) continue;
+      const nst = ncell2 * 4 + e;
+      const ng = g[sid] + 1 + (e !== d ? 2.5 : 0);
+      if (ng < g[nst] - 1e-6) {
+        g[nst] = ng; from[nst] = sid;
+        push(ng + hh(nst), nst);
+      }
+    }
+  }
+  if (best < 0) return null;
+  const cells = [];
+  let sid2 = best;
+  while (sid2 >= 0) {
+    const cell = sid2 >> 2;
+    cells.push(cell);
+    if (cell === s) break;
+    sid2 = from[sid2];
+  }
+  cells.reverse();
+  return cells.map(function(cell){
+    const c = cell % cols, r = (cell - c) / cols;
+    return [O.minx + (c + 0.5) * G, O.miny + (r + 0.5) * G];
+  });
+}
+function orthoFix(pts){
+  const out = [pts[0]];
+  for (let i = 1; i < pts.length; i++) {
+    const p = out[out.length - 1], q = pts[i];
+    if (Math.abs(p[0] - q[0]) > 0.01 && Math.abs(p[1] - q[1]) > 0.01) out.push([p[0], q[1]]);
+    out.push(q);
+  }
+  return out;
+}
+function simplify(pts){
+  const out = [];
+  pts.forEach(function(p){
+    const q = out[out.length - 1];
+    if (!q || Math.abs(p[0] - q[0]) > 0.01 || Math.abs(p[1] - q[1]) > 0.01) out.push(p);
+  });
+  if (out.length < 3) return out;
+  const o2 = [out[0]];
+  for (let i = 1; i < out.length - 1; i++) {
+    const a = o2[o2.length - 1], b = out[i], d = out[i + 1];
+    const sameX = Math.abs(a[0] - b[0]) < 0.01 && Math.abs(b[0] - d[0]) < 0.01;
+    const sameY = Math.abs(a[1] - b[1]) < 0.01 && Math.abs(b[1] - d[1]) < 0.01;
+    if (!(sameX || sameY)) o2.push(b);
+  }
+  o2.push(out[out.length - 1]);
+  return o2;
+}
+function routePts(c){
+  const A = portPos(blkMap[c.a[0]], c.a[1], c.a[2]);
+  const B = portPos(blkMap[c.b[0]], c.b[1], c.b[2]);
+  const da = dir(c.a[1]), db = dir(c.b[1]);
+  const S = 16;
+  const A1 = [A[0] + da[0] * S, A[1] + da[1] * S];
+  const B1 = [B[0] + db[0] * S, B[1] + db[1] * S];
+  const core = routeCore(A1, B1);
+  let pts;
+  if (core) pts = [A, A1].concat(core, [B1, B]);
+  else pts = [A, A1, [B1[0], A1[1]], B1, B];
+  return simplify(orthoFix(pts));
+}
+function dFromPts(pts, round){
+  if (!round) return 'M' + pts.map(function(p){ return p[0] + ',' + p[1]; }).join(' L');
+  let d = 'M' + pts[0][0] + ',' + pts[0][1];
+  const R = 8;
+  for (let i = 1; i < pts.length - 1; i++) {
+    const p0 = pts[i - 1], p1 = pts[i], p2 = pts[i + 1];
+    const v1 = [p1[0] - p0[0], p1[1] - p0[1]], v2 = [p2[0] - p1[0], p2[1] - p1[1]];
+    const l1 = Math.hypot(v1[0], v1[1]) || 1, l2 = Math.hypot(v2[0], v2[1]) || 1;
+    const r = Math.min(R, l1 / 2, l2 / 2);
+    const a = [p1[0] - v1[0] / l1 * r, p1[1] - v1[1] / l1 * r];
+    const b = [p1[0] + v2[0] / l2 * r, p1[1] + v2[1] / l2 * r];
+    d += ' L' + a[0] + ',' + a[1] + ' Q' + p1[0] + ',' + p1[1] + ' ' + b[0] + ',' + b[1];
+  }
+  const last = pts[pts.length - 1];
+  d += ' L' + last[0] + ',' + last[1];
+  return d;
+}
+function renderWire(w){ w.el.setAttribute('d', dFromPts(w.pts, roundMode)); }
+function routeWire(w){ w.pts = routePts(w.c); renderWire(w); }
+function pathHitsRect(w, moved){
+  if (!w.pts) return true;
+  const x0 = moved.x - 6, y0 = moved.y - 6, x1 = moved.x + moved.w + 6, y1 = moved.y + moved.h + 6;
+  for (let i = 1; i < w.pts.length; i++) {
+    const a = w.pts[i - 1], b = w.pts[i];
+    if (Math.abs(a[1] - b[1]) < 0.01) {
+      if (a[1] >= y0 && a[1] <= y1 && Math.max(a[0], b[0]) >= x0 && Math.min(a[0], b[0]) <= x1) return true;
+    } else if (Math.abs(a[0] - b[0]) < 0.01) {
+      if (a[0] >= x0 && a[0] <= x1 && Math.max(a[1], b[1]) >= y0 && Math.min(a[1], b[1]) <= y1) return true;
+    } else {
+      return true;
+    }
+  }
+  return false;
+}
+function updWires(all, moved){
+  buildObstacles();
+  wireList.forEach(function(w){
+    let need = !!all;
+    if (!need && moved) need = (w.c.a[0] === moved.id || w.c.b[0] === moved.id) || pathHitsRect(w, moved);
+    if (need) routeWire(w);
+  });
+}
+function applyView(){ world.setAttribute('transform', 'translate(' + view.tx + ',' + view.ty + ') scale(' + view.k + ')'); }
+function fit(){
+  const xs = BLOCKS.map(function(b){ return b.x; }), ys = BLOCKS.map(function(b){ return b.y; });
+  const minx = Math.min.apply(null, xs) - 30, miny = Math.min.apply(null, ys) - 50;
+  const maxx = Math.max.apply(null, BLOCKS.map(function(b){ return b.x + b.w; })) + 30;
+  const maxy = Math.max.apply(null, BLOCKS.map(function(b){ return b.y + b.h; })) + 30;
+  const r = svg.getBoundingClientRect();
+  const k = Math.min(r.width / (maxx - minx), r.height / (maxy - miny)) * 0.96;
+  view.k = k;
+  view.tx = (r.width - (maxx - minx) * k) / 2 - minx * k;
+  view.ty = (r.height - (maxy - miny) * k) / 2 - miny * k;
+  applyView();
+}
+function build(){
+  CONNS.forEach(function(c){
+    const p = document.createElementNS(NS, 'path');
+    p.setAttribute('class', 'conn ' + c.cls);
+    p.setAttribute('marker-end', 'url(#' + c.mk + ')');
+    const tt = document.createElementNS(NS, 'title'); tt.textContent = c.sig; p.appendChild(tt);
+    p.addEventListener('mouseenter', function(){ p.classList.add('hl'); });
+    p.addEventListener('mouseleave', function(){ p.classList.remove('hl'); });
+    world.appendChild(p);
+    wireList.push({c: c, el: p});
+  });
+  BLOCKS.forEach(function(b){
+    blkMap[b.id] = b;
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'blk');
+    g.setAttribute('transform', 'translate(' + b.x + ',' + b.y + ')');
+    const tip = document.createElementNS(NS, 'title'); tip.textContent = b.tip; g.appendChild(tip);
+    const rect = document.createElementNS(NS, 'rect');
+    rect.setAttribute('class', b.cls);
+    rect.setAttribute('x', 0); rect.setAttribute('y', 0);
+    rect.setAttribute('width', b.w); rect.setAttribute('height', b.h);
+    rect.setAttribute('rx', 10);
+    g.appendChild(rect);
+    const t1 = document.createElementNS(NS, 'text');
+    t1.setAttribute('class', 'bname'); t1.setAttribute('text-anchor', 'middle');
+    t1.setAttribute('x', b.w / 2); t1.setAttribute('y', b.h >= 76 ? 31 : 29);
+    t1.textContent = b.name; g.appendChild(t1);
+    const t2 = document.createElementNS(NS, 'text');
+    t2.setAttribute('class', 'bio'); t2.setAttribute('text-anchor', 'middle');
+    t2.setAttribute('x', b.w / 2); t2.setAttribute('y', b.h >= 76 ? 51 : 49);
+    t2.textContent = b.badge; g.appendChild(t2);
+    if (b.note) {
+      const t3 = document.createElementNS(NS, 'text');
+      t3.setAttribute('class', 'bnote'); t3.setAttribute('text-anchor', 'middle');
+      t3.setAttribute('x', b.w / 2); t3.setAttribute('y', b.h >= 76 ? 67 : 65);
+      t3.textContent = b.note; g.appendChild(t3);
+    }
+    g.addEventListener('mouseenter', function(){
+      wireList.forEach(function(w){ if (w.c.a[0] === b.id || w.c.b[0] === b.id) w.el.classList.add('hl'); });
+    });
+    g.addEventListener('mouseleave', function(){
+      wireList.forEach(function(w){ if (w.c.a[0] === b.id || w.c.b[0] === b.id) w.el.classList.remove('hl'); });
+    });
+    g.addEventListener('pointerdown', function(ev){
+      ev.stopPropagation();
+      drag = {mode: 'blk', b: b, sx: ev.clientX, sy: ev.clientY, x0: b.x, y0: b.y};
+      world.appendChild(g);
+    });
+    world.appendChild(g);
+    b.el = g;
+  });
+  const seen = {};
+  CONNS.forEach(function(c){
+    [c.a, c.b].forEach(function(p){
+      const key = p[0] + '|' + p[1] + '|' + p[2];
+      if (seen[key]) return; seen[key] = 1;
+      const bb = blkMap[p[0]];
+      const pp = portPos(bb, p[1], p[2]);
+      const pin = document.createElementNS(NS, 'rect');
+      pin.setAttribute('x', pp[0] - bb.x - 3);
+      pin.setAttribute('y', pp[1] - bb.y - 3);
+      pin.setAttribute('width', 6); pin.setAttribute('height', 6);
+      pin.setAttribute('rx', 1.5);
+      pin.setAttribute('fill', c.col);
+      bb.el.appendChild(pin);
+    });
+  });
+}
+svg.addEventListener('pointerdown', function(ev){
+  drag = {mode: 'pan', sx: ev.clientX, sy: ev.clientY, tx0: view.tx, ty0: view.ty};
+});
+window.addEventListener('pointermove', function(ev){
+  if (!drag) return;
+  if (drag.mode === 'blk') {
+    const b = drag.b;
+    b.x = drag.x0 + (ev.clientX - drag.sx) / view.k;
+    b.y = drag.y0 + (ev.clientY - drag.sy) / view.k;
+    b.el.setAttribute('transform', 'translate(' + b.x + ',' + b.y + ')');
+    updWires(false, b);
+  } else {
+    view.tx = drag.tx0 + (ev.clientX - drag.sx);
+    view.ty = drag.ty0 + (ev.clientY - drag.sy);
+    applyView();
+  }
+});
+window.addEventListener('pointerup', function(){ const d = drag; drag = null; if (d && d.mode === 'blk') updWires(true); });
+svg.addEventListener('wheel', function(ev){
+  ev.preventDefault();
+  const r = svg.getBoundingClientRect();
+  const cx = ev.clientX - r.left, cy = ev.clientY - r.top;
+  const f = ev.deltaY < 0 ? 1.1 : 1 / 1.1;
+  const k2 = Math.max(0.2, Math.min(3.5, view.k * f));
+  view.tx = cx - (cx - view.tx) * (k2 / view.k);
+  view.ty = cy - (cy - view.ty) * (k2 / view.k);
+  view.k = k2; applyView();
+}, {passive: false});
+document.getElementById('fit').onclick = fit;
+document.getElementById('route').onclick = function(){
+  roundMode = !roundMode;
+  this.textContent = '线型：' + (roundMode ? '圆角' : '直角');
+  wireList.forEach(renderWire);
+};
+document.getElementById('reset').onclick = function(){
+  INIT.forEach(function(p){
+    const b = blkMap[p.id];
+    b.x = p.x; b.y = p.y;
+    b.el.setAttribute('transform', 'translate(' + p.x + ',' + p.y + ')');
+  });
+  updWires(true); fit();
+};
+build(); updWires(true); fit();
+window.blkMap = blkMap; window.wireList = wireList; window.view = view; window.fit = fit;
+window.routeCore = routeCore; window.routePts = routePts; window.Oget = function(){ return O; };
+
+</script>
+</div>
+</body>
+</html>
