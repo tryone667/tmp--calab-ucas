@@ -13,7 +13,7 @@ LA32R 五级流水 CPU 实验工作仓库（计算机体系结构研讨课 · �
 | exp8 | cancel 解控制冒险 + 阻塞解数据冒险 | n1~n20 | xsim PASS，1349305 ns（09-29） | 已上板（09-15 / 09-29），提交包已交 | `exp8/` |
 | exp9 | EX/MEM/WB 三路前递（只剩 load-use 停一拍） | n1~n20 | xsim PASS，639855 ns（09-29） | 已上板（09-29），提交包已交 | `exp9/` |
 | exp10 | 用户态运算指令（mul/div 等） | n1~n36 | xsim PASS，1126075 ns（10-12 课程包复验） | bit 待按课程包重出 | `exp10/` |
-| exp11 | 转移 + 字节/半字访存 | n1~n46 | xsim PASS，1419475 ns（10-12 课程包复验） | bit 待按课程包重出 | `exp11/` |
+| exp11 | 转移 + 字节/半字访存 | n1~n46 | xsim PASS，1419475 ns（10-12 课程包复验；10-13 验收清理后复跑，逐拍等价） | bit 待按课程包重出 | `exp11/` |
 
 ## 目录结构
 
@@ -51,4 +51,5 @@ LA32R 五级流水 CPU 实验工作仓库（计算机体系结构研讨课 · �
 
 - 不入库：课程发布包（expN.zip）、func/obj 镜像、波形与 Vivado 临时产物；换来的是一个小仓库。
 - `exp8/reading/mycpu_top.annotated.v` 与 `exp8/myCPU/mycpu_top.v`（提交版·干净）仅注释差异。
+- exp11 于 2026-10-13 验收通过并按助教意见清理：除法抽成 `divider` 模块、`alu_op` 收窄 22→18 位、div 判断去重；清理后 xsim 复验逐拍等价（详见课程工作区 README §十三）。
 - 本仓库由本机工作区 `C:\course_files\2026_autumn\研讨-计算机体系结构` 整理，工作区主说明见该目录 README.md。

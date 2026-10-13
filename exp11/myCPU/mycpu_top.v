@@ -3,7 +3,9 @@
 // Experiment 11: add branch (blt/bge/bltu/bgeu) and byte/half load-store
 // instructions (ld.b/ld.h/ld.bu/ld.hu/st.b/st.h), built on exp10 core
 // (pcaddu12i/slti/sltui/andi/ori/xori/sll/srl/sra/mul/mulh/div/mod).
-//  - div/mod: multi-cycle restoring divider in EX; pipeline stalls
+//  - mul/mulh : single-cycle in ALU (see alu.v)
+//  - div/mod  : multi-cycle divider unit in EX (module divider below);
+//               pipeline stalls while it runs
 //  - load-use / div-consumer hazards stall; EX/MEM/WB forwarding
 //  - control hazard: resolve branch in ID (signed/unsigned compare)
 // ============================================================================
@@ -197,7 +199,7 @@ wire        need_si20;
 wire        need_si26;
 wire        src2_is_4;
 
-wire [21:0] alu_op;
+wire [17:0] alu_op;   // one-hot add..mulh; div/mod run in the divider unit
 wire        src1_is_pc;
 wire        src2_is_imm;
 wire        res_from_mem;
@@ -305,10 +307,10 @@ assign alu_op[14] = inst_sra_w;
 assign alu_op[15] = inst_mul_w;
 assign alu_op[16] = inst_mulh_w;
 assign alu_op[17] = inst_mulh_wu;
-assign alu_op[18] = inst_div_w;
-assign alu_op[19] = inst_mod_w;
-assign alu_op[20] = inst_div_wu;
-assign alu_op[21] = inst_mod_wu;
+
+// div/mod results come from the divider unit in EX (not from alu_op):
+// one shared predicate per fact, carried into EX by pipeline registers.
+wire id_alu_is_div = inst_div_w | inst_div_wu | inst_mod_w | inst_mod_wu;
 
 assign id_ls_type = inst_st_b  ? 4'd1 :
                     inst_st_h  ? 4'd2 :
@@ -463,7 +465,8 @@ assign br_target = (inst_beq || inst_bne || inst_blt || inst_bge
 // ---- data hazard: stall while EX holds a result ID needs ----
 //  1) EX load (data not back yet)
 //  2) EX div/mod (multi-cycle, result valid only after it leaves EX)
-wire ex_alu_is_div = |ex_alu_op[21:18];
+//     ex_alu_is_div / ex_alu_is_mod are the pipelined copies of the
+//     ID-time div/mod predicates (declared with the EX registers below).
 wire id_stall = if_valid && ex_valid && ex_gr_we && (ex_dest != 5'b0)
              && (ex_res_from_mem || ex_alu_is_div)
              && ( (id_uses_rj  && (ex_dest == rj))
@@ -476,7 +479,7 @@ wire id_to_ex_valid = if_valid && id_ready_go;
 // =============================== EX stage ================================
 reg         ex_valid;
 reg  [31:0] ex_pc;
-reg  [21:0] ex_alu_op;
+reg  [17:0] ex_alu_op;
 reg  [31:0] ex_alu_src1;
 reg  [31:0] ex_alu_src2;
 reg  [31:0] ex_rkd_value;   // store data
@@ -484,77 +487,24 @@ reg         ex_gr_we;
 reg  [3:0]  ex_ls_type;     // load/store type
 reg         ex_res_from_mem;
 reg  [ 4:0] ex_dest;
+reg         ex_alu_is_div;  // instruction in EX is div/mod
 
-// ---- multi-cycle divider state (div/mod instructions) ----
-reg         ex_div_busy;
-reg         ex_div_unsigned;
-reg         ex_div_mod;
-reg         ex_div_q_neg;
-reg         ex_div_r_neg;
-reg  [63:0] ex_div_acc;
-reg  [31:0] ex_div_babs;
-reg  [ 4:0] ex_div_step;
-reg  [31:0] ex_div_q;
-reg  [31:0] ex_div_r;
+// ---- multi-cycle divider unit (div/mod instructions) ----
+wire        ex_div_start  = id_to_ex_valid && ex_allowin && id_alu_is_div;
+wire        ex_div_busy;
+wire [31:0] ex_div_result;
 
-wire id_is_divmod = inst_div_w | inst_mod_w | inst_div_wu | inst_mod_wu;
-wire ex_accept_div = id_to_ex_valid && ex_allowin && id_is_divmod;
-
-wire [31:0] div_rem_n = {ex_div_acc[62:32], ex_div_acc[31]};
-wire [31:0] div_q_n   = {ex_div_acc[30: 0], 1'b0};
-wire        div_ge    = (ex_div_babs != 32'd0) && (div_rem_n >= ex_div_babs);
-wire [63:0] div_acc_n = div_ge ? {div_rem_n - ex_div_babs, div_q_n | 32'd1}
-                               : {div_rem_n, div_q_n};
-
-always @(posedge clk) begin
-    if (reset) begin
-        ex_div_busy     <= 1'b0;
-        ex_div_unsigned <= 1'b0;
-        ex_div_mod      <= 1'b0;
-        ex_div_q_neg    <= 1'b0;
-        ex_div_r_neg    <= 1'b0;
-        ex_div_acc      <= 64'b0;
-        ex_div_babs     <= 32'b0;
-        ex_div_step     <= 5'd0;
-        ex_div_q        <= 32'b0;
-        ex_div_r        <= 32'b0;
-    end
-    else if (ex_accept_div) begin
-        ex_div_busy     <= 1'b1;
-        ex_div_step     <= 5'd0;
-        ex_div_unsigned <= inst_div_wu | inst_mod_wu;
-        ex_div_mod      <= inst_mod_w | inst_mod_wu;
-        ex_div_q_neg    <= inst_div_w && (id_rj_value[31] ^ id_rkd_value[31]);
-        ex_div_r_neg    <= inst_mod_w && id_rj_value[31];
-        if (inst_div_wu || inst_mod_wu) begin
-            ex_div_acc  <= {32'd0, id_rj_value};
-            ex_div_babs <= id_rkd_value;
-        end
-        else begin
-            ex_div_acc  <= {32'd0, id_rj_value[31] ? (~id_rj_value + 32'd1) : id_rj_value};
-            ex_div_babs <= id_rkd_value[31] ? (~id_rkd_value + 32'd1) : id_rkd_value;
-        end
-    end
-    else if (ex_div_busy) begin
-        if (ex_div_step == 5'd31) begin
-            ex_div_busy <= 1'b0;
-            if (ex_div_unsigned) begin
-                ex_div_q <= div_acc_n[31: 0];
-                ex_div_r <= div_acc_n[63:32];
-            end
-            else begin
-                ex_div_q <= ex_div_q_neg ? (~div_acc_n[31: 0] + 32'd1)
-                                         : div_acc_n[31: 0];
-                ex_div_r <= ex_div_r_neg ? (~div_acc_n[63:32] + 32'd1)
-                                         : div_acc_n[63:32];
-            end
-        end
-        else begin
-            ex_div_step <= ex_div_step + 1'b1;
-            ex_div_acc  <= div_acc_n;
-        end
-    end
-end
+divider u_divider(
+    .clk    (clk                       ),
+    .reset  (reset                     ),
+    .start  (ex_div_start              ),
+    .unsign (inst_div_wu | inst_mod_wu ),
+    .mod    (inst_mod_w  | inst_mod_wu ),
+    .a      (id_rj_value               ),
+    .b      (id_rkd_value              ),
+    .busy   (ex_div_busy               ),
+    .result (ex_div_result             )
+    );
 
 wire ex_ready_go  = ~ex_div_busy;
 wire ex_allowin   = !ex_valid || (ex_ready_go && mem_allowin);
@@ -572,7 +522,7 @@ end
 always @(posedge clk) begin
     if (reset) begin
         ex_pc <= 32'b0;
-        ex_alu_op <= 22'b0;
+        ex_alu_op <= 18'b0;
         ex_alu_src1 <= 32'b0;
         ex_alu_src2 <= 32'b0;
         ex_rkd_value <= 32'b0;
@@ -580,6 +530,7 @@ always @(posedge clk) begin
         ex_ls_type <= 4'd0;
         ex_res_from_mem <= 1'b0;
         ex_dest <= 5'b0;
+        ex_alu_is_div <= 1'b0;
     end
     else if (id_to_ex_valid && ex_allowin) begin
         ex_pc <= if_pc;
@@ -591,6 +542,7 @@ always @(posedge clk) begin
         ex_ls_type <= id_ls_type;
         ex_res_from_mem <= res_from_mem;
         ex_dest <= dest;
+        ex_alu_is_div <= id_alu_is_div;
     end
 end
 
@@ -602,9 +554,8 @@ alu u_alu(
     .alu_result (ex_alu_result_raw)
     );
 
-// div/mod result is produced by the multi-cycle divider in EX
-assign ex_alu_result = ex_alu_is_div ? (ex_div_mod ? ex_div_r : ex_div_q)
-                                     : ex_alu_result_raw;
+// div/mod result comes from the divider unit (multi-cycle, EX)
+assign ex_alu_result = ex_alu_is_div ? ex_div_result : ex_alu_result_raw;
 
 // memory request: issued during the EX stage, data returns in MEM stage
 assign data_sram_en    = ex_valid && (ex_ls_type != 4'd0);
@@ -717,5 +668,93 @@ assign debug_wb_pc       = wb_pc;
 assign debug_wb_rf_we    = {4{rf_we}};
 assign debug_wb_rf_wnum  = wb_dest;
 assign debug_wb_rf_wdata = wb_value;
+
+endmodule
+
+// ============================================================================
+// divider : multi-cycle restoring divider for LA32R div.w / mod.w /
+//           div.wu / mod.wu.  start is a one-cycle pulse; the unit then runs
+//           32 steps with busy high; result is mod ? remainder : quotient,
+//           quotient truncated toward zero and remainder taking the
+//           dividend sign for the signed variants.
+// ============================================================================
+module divider(
+    input  wire        clk,
+    input  wire        reset,
+    input  wire        start,
+    input  wire        unsign,
+    input  wire        mod,
+    input  wire [31:0] a,
+    input  wire [31:0] b,
+    output wire        busy,
+    output wire [31:0] result
+);
+
+reg         busy_r;
+reg         unsign_r;
+reg         mod_r;
+reg         q_neg;
+reg         r_neg;
+reg  [63:0] acc;
+reg  [31:0] babs;
+reg  [ 4:0] step;
+reg  [31:0] quot;
+reg  [31:0] rem;
+
+assign busy   = busy_r;
+assign result = mod_r ? rem : quot;
+
+wire [31:0] rem_n = {acc[62:32], acc[31]};
+wire [31:0] q_n   = {acc[30: 0], 1'b0};
+wire        ge    = (babs != 32'd0) && (rem_n >= babs);
+wire [63:0] acc_n = ge ? {rem_n - babs, q_n | 32'd1} : {rem_n, q_n};
+
+always @(posedge clk) begin
+    if (reset) begin
+        busy_r   <= 1'b0;
+        unsign_r <= 1'b0;
+        mod_r    <= 1'b0;
+        q_neg    <= 1'b0;
+        r_neg    <= 1'b0;
+        acc      <= 64'b0;
+        babs     <= 32'b0;
+        step     <= 5'd0;
+        quot     <= 32'b0;
+        rem      <= 32'b0;
+    end
+    else if (start) begin
+        busy_r   <= 1'b1;
+        unsign_r <= unsign;
+        mod_r    <= mod;
+        q_neg    <= ~unsign && (a[31] ^ b[31]);
+        r_neg    <= ~unsign &&  a[31];
+        step     <= 5'd0;
+        if (unsign) begin
+            acc  <= {32'd0, a};
+            babs <= b;
+        end
+        else begin
+            acc  <= {32'd0, a[31] ? (~a + 32'd1) : a};
+            babs <= b[31] ? (~b + 32'd1) : b;
+        end
+    end
+    else if (busy_r) begin
+        if (step == 5'd31) begin
+            busy_r <= 1'b0;
+            if (unsign_r) begin
+                quot <= acc_n[31: 0];
+                rem  <= acc_n[63:32];
+            end
+            else begin
+                quot <= q_neg ? (~acc_n[31: 0] + 32'd1) : acc_n[31: 0];
+                rem  <= r_neg ? (~acc_n[63:32] + 32'd1) : acc_n[63:32];
+            end
+        end
+        else begin
+            step <= step + 1'b1;
+            acc  <= acc_n;
+        end
+    end
+end
 
 endmodule
