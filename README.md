@@ -22,7 +22,7 @@ LA32R 五级流水 CPU 实验工作仓库（计算机体系结构研讨课 · �
     expN/logs/             关键仿真/上板日志（保留原始文件名）
     exp7/baseline_ref_sc/  exp6 修正版单周期基线（exp6_to_exp7.patch 的应用对象）
     exp8/reading/          阅读版 mycpu_top（行尾中文注释，标 【阻塞】【cancel】）
-    docs/                  exp8 验收速查、数据通路 PNG、专题实验报告与插图
+    docs/                  exp8 验收速查、数据通路 PNG、专题实验报告（md + PDF）与插图
     tools/                 run_sim_cli.bat（xsim 一键脚本）；flash_board.sh/.tcl（上板）
     datapath-preview/      数据通路预览（exp7~11：收束图 / 布线可拖版 / DigitalJS 全量图；双击 index.html）
 
@@ -32,7 +32,7 @@ LA32R 五级流水 CPU 实验工作仓库（计算机体系结构研讨课 · �
 
 - 用法：把上一版 `myCPU/` 拷到某目录，在含 `myCPU/` 的目录内执行
   `git -c core.autocrlf=false apply -p1 < patch`。
-- exp6→7→8→9 三段与目标 RTL 逐字节一致（2026-09-29 闭环复验过）；`exp9→exp10→exp11` 两段于 2026-10-13 生成并闭环复验（逐字节一致）：9→10 为跨代码谱系两版的直接对比（+242/−149，alu.v / mycpu_top.v），10→11 为连续两版（+111/−48）。
+- exp6→7→8→9 三段与目标 RTL 逐字节一致（2026-09-29 闭环复验过）；`exp9→exp10→exp11` 两段于 2026-10-13 生成并闭环复验（逐字节一致）：9→10 为跨代码谱系两版的直接对比（+242/−149，alu.v / mycpu_top.v），10→11 为连续两版（10-13 验收清理后重制：+126/−87，含 divider 模块化）。
 
 ## 在另一台电脑上跑（Windows + Vivado 2019.2）
 
@@ -52,4 +52,5 @@ LA32R 五级流水 CPU 实验工作仓库（计算机体系结构研讨课 · �
 - 不入库：课程发布包（expN.zip）、func/obj 镜像、波形与 Vivado 临时产物；换来的是一个小仓库。
 - `exp8/reading/mycpu_top.annotated.v` 与 `exp8/myCPU/mycpu_top.v`（提交版·干净）仅注释差异。
 - exp11 于 2026-10-13 验收通过并按助教意见清理：除法抽成 `divider` 模块、`alu_op` 收窄 22→18 位、div 判断去重；清理后 xsim 复验逐拍等价（详见课程工作区 README §十三）。
+- 专题报告（实践 7/8/9）已定稿并出 PDF：`docs/report/01_流水线CPU设计专题_实验报告_林岳_2024K8009929018.pdf`（8 页；含四个真实调试案例）。
 - 本仓库由本机工作区 `C:\course_files\2026_autumn\研讨-计算机体系结构` 整理，工作区主说明见该目录 README.md。
