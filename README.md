@@ -27,13 +27,11 @@ LA32R 五级流水 CPU 实验工作仓库（计算机体系结构研讨课 · �
 
 ## 补丁链
 
-    exp6(修正版 ref_sc) --exp6_to_exp7--> exp7 --exp7_to_exp8--> exp8 --exp8_to_exp9--> exp9
-    exp10 --exp10_to_exp11--> exp11
+    exp6(修正版 ref_sc) --exp6_to_exp7--> exp7 --exp7_to_exp8--> exp8 --exp8_to_exp9--> exp9 --exp9_to_exp10--> exp10 --exp10_to_exp11--> exp11
 
 - 用法：把上一版 `myCPU/` 拷到某目录，在含 `myCPU/` 的目录内执行
   `git -c core.autocrlf=false apply -p1 < patch`。
-- exp6→7→8→9 三段与目标 RTL 逐字节一致（2026-09-29 闭环复验过）；
-  exp10 与 exp11 属超前线的连续两版（2026-10-12 已按课程包复验），9→10 跨代码谱系、没有补丁。
+- exp6→7→8→9 三段与目标 RTL 逐字节一致（2026-09-29 闭环复验过）；`exp9→exp10→exp11` 两段于 2026-10-13 生成并闭环复验（逐字节一致）：9→10 为跨代码谱系两版的直接对比（+242/−149，alu.v / mycpu_top.v），10→11 为连续两版（+111/−48）。
 
 ## 在另一台电脑上跑（Windows + Vivado 2019.2）
 
