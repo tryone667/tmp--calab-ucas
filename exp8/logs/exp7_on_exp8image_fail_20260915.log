@@ -1,0 +1,17 @@
+cd project/loongson.sim/sim_1/behav/iverilog && vvp ./gettrace
+WARNING: sync_ram.v:63: $readmemb: Standard inconsistency, following 1364-2005.
+WARNING: sync_ram.v:63: $readmemb(../../../../../../../../func/obj/inst_ram.mif): Not enough words in the file for the requested range [0:262143].
+WARNING: sync_ram.v:92: $readmemb: Standard inconsistency, following 1364-2005.
+WARNING: sync_ram.v:92: $readmemb(../../../../../../../../func/obj/data_ram.mif): Not enough words in the file for the requested range [0:65535].
+VCD info: dumpfile dump.vcd opened for output.
+==============================================================
+Test begin!
+WARNING: mycpu_tb.v:125: invalid file descriptor (0x0) given to $feof.
+--------------------------------------------------------------
+[   2077 ns] Error!!!
+    reference: PC = 0xxxxxxxxx, wb_rf_wnum = 0xxx, wb_rf_wdata = 0xxxxxxxxx
+    mycpu    : PC = 0x1c000000, wb_rf_wnum = 0x0c, wb_rf_wdata = 0xffffffff
+--------------------------------------------------------------
+WARNING: mycpu_tb.v:125: invalid file descriptor (0x0) given to $feof.
+WARNING: mycpu_tb.v:125: invalid file descriptor (0x0) given to $feof.
+WARNING: mycpu_tb.v:125: invalid file descriptor (0x0) given to $feof.

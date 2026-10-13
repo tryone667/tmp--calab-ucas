@@ -1,0 +1,67 @@
+diff --git a/myCPU/mycpu_top.v b/myCPU/mycpu_top.v
+index ada8f39..6da6f4c 100644
+--- a/myCPU/mycpu_top.v
++++ b/myCPU/mycpu_top.v
+@@ -1,7 +1,7 @@
+ // ============================================================================
+ // 5-stage pipelined LoongArch LA32R CPU (preIF -> IF -> ID -> EX -> MEM -> WB)
+-// Experiment: exp8 pipeline CPU (cancel for control hazards, blocking for data)
+-//  - data hazard : ID blocks until the producer has written back the regfile
++// Experiment: exp9 pipeline CPU (forwarding optimises the data-hazard handling)
++//  - data hazard : EX/MEM/WB results are forwarded to ID; only load-use stalls
+ //  - control hazard : branch resolved in ID; taken branch cancels the
+ //                     wrong-path insts in if_req/IF and redirects the PC
+ //  - inst/data RAM : synchronous read model (rdata returns one cycle after the
+@@ -310,13 +310,19 @@ wire id_uses_rkd = inst_add_w | inst_sub_w | inst_slt | inst_sltu
+                  | inst_and | inst_or | inst_nor | inst_xor
+                  | inst_beq | inst_bne | inst_st_w;
+ 
+-// ---- exp7 stage: no forwarding, operands come straight from the regfile ----
++// ---- data forwarding: EX/MEM/WB results to ID (newest producer first) ----
+ wire [31:0] ex_alu_result;   // EX stage ALU result (combinational)
+ wire [31:0] mem_value;       // MEM stage result
+ wire [31:0] wb_result;       // WB stage result
+ 
+-wire [31:0] id_rj_value  = rf_rdata1;
+-wire [31:0] id_rkd_value = rf_rdata2;
++wire [31:0] id_rj_value  = fwd_ex_to_rj  ? ex_alu_result :
++                           fwd_mem_to_rj ? mem_value     :
++                           fwd_wb_to_rj  ? wb_result     :
++                                           rf_rdata1     ;
++wire [31:0] id_rkd_value = fwd_ex_to_rkd  ? ex_alu_result :
++                           fwd_mem_to_rkd ? mem_value     :
++                           fwd_wb_to_rkd  ? wb_result     :
++                                            rf_rdata2    ;
+ 
+ // ---- branch resolved in ID ----
+ wire rj_eq_rd = (id_rj_value == id_rkd_value);
+@@ -330,17 +336,20 @@ wire [31:0] br_target;
+ assign br_target = (inst_beq || inst_bne || inst_bl || inst_b) ? (if_pc + br_offs) :
+                                                     /*inst_jirl*/ (id_rj_value + jirl_offs);
+ 
+-// ---- data hazard: block ID until the producer has written the regfile ----
++// ---- data hazard: only load-use cannot be forwarded, stall one cycle ----
+ wire [4:0] id_src2_reg = src_reg_is_rd ? rd : rk;
+ 
+-wire id_ex_hit  = ex_valid  && ex_gr_we  && (ex_dest  != 5'b0)
+-               && ( (id_uses_rj && (ex_dest  == rj)) || (id_uses_rkd && (ex_dest  == id_src2_reg)) );
+-wire id_mem_hit = mem_valid && mem_gr_we && (mem_dest != 5'b0)
+-               && ( (id_uses_rj && (mem_dest == rj)) || (id_uses_rkd && (mem_dest == id_src2_reg)) );
+-wire id_wb_hit  = wb_valid  && wb_gr_we  && (wb_dest  != 5'b0)
+-               && ( (id_uses_rj && (wb_dest  == rj)) || (id_uses_rkd && (wb_dest  == id_src2_reg)) );
+-
+-wire id_stall = if_valid && (id_ex_hit || id_mem_hit || id_wb_hit);
++wire fwd_ex_to_rj  = ex_valid  && ex_gr_we  && ~ex_res_from_mem
++                   && (ex_dest  != 5'b0) && (ex_dest  == rj);
++wire fwd_ex_to_rkd = ex_valid  && ex_gr_we  && ~ex_res_from_mem
++                   && (ex_dest  != 5'b0) && (ex_dest  == id_src2_reg);
++wire fwd_mem_to_rj  = mem_valid && mem_gr_we && (mem_dest != 5'b0) && (mem_dest == rj);
++wire fwd_mem_to_rkd = mem_valid && mem_gr_we && (mem_dest != 5'b0) && (mem_dest == id_src2_reg);
++wire fwd_wb_to_rj   = wb_valid  && wb_gr_we  && (wb_dest  != 5'b0) && (wb_dest  == rj);
++wire fwd_wb_to_rkd  = wb_valid  && wb_gr_we  && (wb_dest  != 5'b0) && (wb_dest  == id_src2_reg);
++
++wire id_stall = if_valid && ex_valid && ex_res_from_mem && ex_gr_we && (ex_dest != 5'b0)
++             && ( (id_uses_rj  && (ex_dest == rj)) || (id_uses_rkd && (ex_dest == id_src2_reg)) );
+ wire id_ready_go  = ~id_stall;
+ // ID is the combinational decode between IF regs and EX (classic 5-stage)
+ wire id_allowin   = !if_valid || (id_ready_go && ex_allowin);

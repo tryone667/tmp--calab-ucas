@@ -1,0 +1,66 @@
+diff --git a/myCPU/mycpu_top.v b/myCPU/mycpu_top.v
+index c713b81..ada8f39 100644
+--- a/myCPU/mycpu_top.v
++++ b/myCPU/mycpu_top.v
+@@ -1,8 +1,9 @@
+ // ============================================================================
+ // 5-stage pipelined LoongArch LA32R CPU (preIF -> IF -> ID -> EX -> MEM -> WB)
+-// Experiment: exp7 pipeline CPU (v7 stage: no hazard handling, NOP image)
+-//  - data hazard : none - the NOP-inserted test image separates dependent insts
+-//  - control hazard : branch resolved in ID, PC redirect only (no cancel)
++// Experiment: exp8 pipeline CPU (cancel for control hazards, blocking for data)
++//  - data hazard : ID blocks until the producer has written back the regfile
++//  - control hazard : branch resolved in ID; taken branch cancels the
++//                     wrong-path insts in if_req/IF and redirects the PC
+ //  - inst/data RAM : synchronous read model (rdata returns one cycle after the
+ //                    request), matching the soc_bram sync_ram / BRAM flow
+ // ============================================================================
+@@ -80,7 +81,7 @@ always @(posedge clk) begin
+         if_req_valid <= 1'b0;
+     end
+     else if (if_req_allowin) begin
+-        if_req_valid <= pre_if_valid;
++        if_req_valid <= pre_if_valid && !br_taken;
+     end
+ end
+ 
+@@ -88,7 +89,7 @@ always @(posedge clk) begin
+     if (reset) begin
+         if_req_pc <= 32'h1bfffffc;
+     end
+-    else if (if_req_allowin && pre_if_valid) begin
++    else if (if_req_allowin && pre_if_valid && !br_taken) begin
+         if_req_pc <= pre_if_pc;
+     end
+ end
+@@ -100,8 +101,8 @@ reg  [31:0] if_inst;
+ 
+ wire if_ready_go = 1'b1;
+ wire if_allowin  = !if_valid || (if_ready_go && id_allowin);
+-// exp7 stage: no cancel; the wrong-path instruction is a NOP in the image
+-wire if_req_to_if_valid = if_req_valid;
++// cancel the wrong-path instruction queued behind a taken branch
++wire if_req_to_if_valid = if_req_valid && !br_taken;
+ 
+ always @(posedge clk) begin
+     if (reset) begin
+@@ -329,8 +330,17 @@ wire [31:0] br_target;
+ assign br_target = (inst_beq || inst_bne || inst_bl || inst_b) ? (if_pc + br_offs) :
+                                                     /*inst_jirl*/ (id_rj_value + jirl_offs);
+ 
+-// ---- exp7 stage: no blocking; the NOP-inserted image covers RAW ----
+-wire id_stall = 1'b0;
++// ---- data hazard: block ID until the producer has written the regfile ----
++wire [4:0] id_src2_reg = src_reg_is_rd ? rd : rk;
++
++wire id_ex_hit  = ex_valid  && ex_gr_we  && (ex_dest  != 5'b0)
++               && ( (id_uses_rj && (ex_dest  == rj)) || (id_uses_rkd && (ex_dest  == id_src2_reg)) );
++wire id_mem_hit = mem_valid && mem_gr_we && (mem_dest != 5'b0)
++               && ( (id_uses_rj && (mem_dest == rj)) || (id_uses_rkd && (mem_dest == id_src2_reg)) );
++wire id_wb_hit  = wb_valid  && wb_gr_we  && (wb_dest  != 5'b0)
++               && ( (id_uses_rj && (wb_dest  == rj)) || (id_uses_rkd && (wb_dest  == id_src2_reg)) );
++
++wire id_stall = if_valid && (id_ex_hit || id_mem_hit || id_wb_hit);
+ wire id_ready_go  = ~id_stall;
+ // ID is the combinational decode between IF regs and EX (classic 5-stage)
+ wire id_allowin   = !if_valid || (id_ready_go && ex_allowin);

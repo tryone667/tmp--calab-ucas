@@ -1,0 +1,74 @@
+
+****** Vivado v2019.2 (64-bit)
+  **** SW Build 2708876 on Wed Nov  6 21:40:23 MST 2019
+  **** IP Build 2700528 on Thu Nov  7 00:09:20 MST 2019
+    ** Copyright 1986-2019 Xilinx, Inc. All Rights Reserved.
+
+source {C:\Users\17613\AppData\Local\Temp\flash_board.tcl}
+# set bit [file normalize $env(BIT_FILE)]
+# puts "BIT_FILE = $bit"
+BIT_FILE = C:/vivado_prj/exp8/soc_verify/soc_bram/run_vivado/project/loongson.runs/impl_1/soc_lite_top.bit
+# if {![file exists $bit]} {
+#   puts "ERROR: bit file not found: $bit"
+#   exit 1
+# }
+# open_hw_manager
+# connect_hw_server
+INFO: [Labtools 27-2285] Connecting to hw_server url TCP:localhost:3121
+INFO: [Labtools 27-2222] Launching hw_server...
+INFO: [Labtools 27-2221] Launch Output:
+
+****** Xilinx hw_server v2019.2
+  **** Build date : Nov  6 2019 at 22:12:23
+    ** Copyright 1986-2019 Xilinx, Inc. All Rights Reserved.
+
+
+INFO: [Labtools 27-3415] Connecting to cs_server url TCP:localhost:3042
+INFO: [Labtools 27-3417] Launching cs_server...
+INFO: [Labtools 27-2221] Launch Output:
+
+
+****** Xilinx cs_server v2019.2.0
+  **** Build date : Nov 07 2019-13:28:22
+    ** Copyright 2017-2019 Xilinx, Inc. All Rights Reserved.
+
+
+
+connect_hw_server: Time (s): cpu = 00:00:00 ; elapsed = 00:00:06 . Memory (MB): peak = 301.992 ; gain = 0.000
+# set targets [get_hw_targets -quiet]
+# if {[llength $targets] == 0} {
+#   puts "ERROR: no JTAG target found (check cable / board power)"
+#   close_hw_manager
+#   exit 2
+# }
+# current_hw_target [lindex $targets 0]
+# open_hw_target
+INFO: [Labtoolstcl 44-466] Opening hw_target localhost:3121/xilinx_tcf/Xilinx/Port_#0001.Hub_#0005
+# set devs [get_hw_devices]
+# if {[llength $devs] == 0} {
+#   puts "ERROR: no device found on target"
+#   close_hw_manager
+#   exit 2
+# }
+# set dev [lindex $devs 0]
+# puts "=== FOUND DEVICE: $dev ==="
+=== FOUND DEVICE: xc7a200t_0 ===
+# current_hw_device $dev
+# refresh_hw_device -update_hw_probes false [current_hw_device]
+INFO: [Labtools 27-1435] Device xc7a200t (JTAG device index = 0) is not programmed (DONE status = 0).
+# set_property PROGRAM.FILE $bit [current_hw_device]
+# program_hw_devices [current_hw_device]
+INFO: [Labtools 27-3164] End of startup status: HIGH
+program_hw_devices: Time (s): cpu = 00:00:21 ; elapsed = 00:00:21 . Memory (MB): peak = 1558.258 ; gain = 0.852
+# puts "=== PROGRAM DONE ==="
+=== PROGRAM DONE ===
+# close_hw_manager
+****** Webtalk v2019.2 (64-bit)
+  **** SW Build 2708876 on Wed Nov  6 21:40:23 MST 2019
+  **** IP Build 2700528 on Thu Nov  7 00:09:20 MST 2019
+    ** Copyright 1986-2019 Xilinx, Inc. All Rights Reserved.
+
+source C:/Users/17613/AppData/Local/Temp/.Xil_17613/Vivado-9280-rainthink/webtalk/labtool_webtalk.tcl -notrace
+INFO: [Common 17-206] Exiting Webtalk at Tue Sep 29 13:39:25 2026...
+# exit 0
+INFO: [Common 17-206] Exiting Vivado at Tue Sep 29 13:39:25 2026...

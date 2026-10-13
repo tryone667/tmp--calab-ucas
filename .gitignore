@@ -1,0 +1,11 @@
+# 波形与 Vivado 临时产物
+*.vcd
+*.wdb
+*.pb
+*.jou
+.Xil/
+xsim.dir/
+webtalk*
+# 备份文件
+*.bak*
+*.bak_*
