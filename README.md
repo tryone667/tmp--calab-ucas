@@ -12,7 +12,7 @@ C:\course_files\2026_autumn\
 │   ├── prj1/                  exp1（跑马灯）、exp6（单周期找错；exp6/ref_sc = 修正版基线）
 │   ├── prj2/                  exp7~exp11（流水线系列，下分 exp：myCPU / patch / reading）
 │   ├── viz/                   可视化线（verilog-viz + datapath-preview）
-│   ├── 实验报告/              报告要求 + 模板 + 专题报告 md/PDF + figures（见 §九）
+│   ├── reports/               报告要求 + 模板 + 专题报告 md/PDF + figures（见 §九）
 │   ├── tools/                 run_sim_cli.bat（xsim 一键脚本）
 │   ├── ref/                   课程发布包 + 课程讲义（本地参考，不入库；见 ref/README.md）
 │   ├── patch/                 提交包存档：5 个提交 zip（本地保留，不入库）
@@ -79,7 +79,7 @@ C:\course_files\2026_autumn\
 | 综合 / 实现 / 出 bit | `C:\Application\Xilinx\Vivado\2019.2`（器件 xc7a200tfbg676-1） | 工程放在 `C:\vivado_prj\expNN`（英文路径） |
 | 上板（JTAG 烧 bit） | 脚本已删（2026-10-14），恢复/手动流程见 §八 | 用户不常用，按需恢复 |
 | 课件文本抽取 | `C:\course_files\_tools\extract_slides.py` | **全工作区通用，禁止另写抽取脚本**；说明见 `C:\course_files\_tools\README.md` |
-| 报告插图 | 手写 SVG（`实验报告/figures/`） | 浏览器 / Inkscape / draw.io 可直接编辑，不引入绘图框架 |
+| 报告插图 | 手写 SVG（`reports/figures/`） | 浏览器 / Inkscape / draw.io 可直接编辑，不引入绘图框架 |
 | Python | 3.10.11（已装 PyMuPDF / python-pptx / pdfplumber / pypdf） | 抽取与校验用 |
 
 - 课程讲义是 PDF 原件，**直接打开读即可**；本课程不建 `01_extracted/`（研讨课不套理论课模板）。确需纯文本时用上表那个通用工具。
@@ -121,7 +121,7 @@ C:\course_files\2026_autumn\
    ⚠️ Vivado 工程里的 `myCPU` 副本比工作区多一行 `` `timescale ``（纯仿真指令，综合时无影响），代码其余部分逐字节等价；**以工作区为准**，别反向覆盖。
 5. **上板验证**（按需；脚本与手动流程见 §八）：日志出现 `=== PROGRAM DONE ===`；板卡数码管停在 `0x14000014`、双绿灯亮 = n1~n20 全 PASS。
 6. **打包提交**（命名 `prjN_expM_箱子号_学号.zip`）：`myCPU/`（四文件）+ `patch/`（相对上一实验的 git 风格 unified diff，做法见 `课程讲义/A03_提交patch指导/`）+ `soc_lite_top.bit`。成品放 `patch/`（工作区根的提交归档目录）。
-7. **写报告**：复制 `实验报告/报告模板.md` 为 `实验报告/NN_<专题>_实验报告.md`，插图放 `实验报告/figures/`（详见 §九）。
+7. **写报告**：复制 `reports/报告模板.md` 为 `reports/NN_<专题>_实验报告.md`，插图放 `reports/figures/`（详见 §九）。
 
 ### 4.3 常用命令与善后
 
@@ -171,7 +171,7 @@ C:\course_files\2026_autumn\
 
 课程口径（`课程讲义/00_课程介绍ppt.pdf`）：**每个实验专题提交一份书面实验报告，全课程共 6 个专题；第 1 个专题个人独立完成，后 5 个专题分组完成**；实验任务主观分的判分依据包含实验报告撰写质量。体例要求见 `课程讲义/A01_实验报告撰写建议.pdf`：题目须标明是哪个实践专题、写明姓名学号、是文章不是幻灯片、**不放目录**、格式自定但全篇统一、图尽量用 visio / draw.io 等工具画。
 
-报告区 `实验报告/`：
+报告区 `reports/`：
 
 | 文件 | 说明 |
 |---|---|
@@ -200,7 +200,7 @@ C:\course_files\2026_autumn\
 | `prj2/sim.log` | 移入 `prj2/logs/sim.log` | 与其余仿真日志同处 |
 | `同学参考/exp7-2_myCPU/` | 删除 | 与 `同学参考/exp7-2/myCPU/` 四文件 + patch **逐字节一致**（SHA256 核对），纯重复 |
 | `同学参考/*.log`（3 个）、3 个 `.DS_Store` | 移入 `logs/` / 删除 | 验证日志集中存放；`.DS_Store` 是 macOS 元数据垃圾 |
-| — | 新建 `实验报告/` | 见 §九 |
+| — | 新建 `reports/` | 见 §九 |
 
 根目录现只保留 `README.md` 与 8 个内容目录（课程发布包 / 课程讲义 / 实验报告 / prj1 / prj2 / patch / 上板工具 / 同学参考）。
 
