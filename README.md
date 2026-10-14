@@ -274,4 +274,5 @@ C:\course_files\2026_autumn\
 - **删除（用户确认不再需要）**：`同学参考/`、根目录 `给同学_exp8or9_提交包_20260929.zip`（2026-10-13）；`上板工具/`、`验收准备/`、`exp8_RTL设计说明.md`（2026-10-14 追加，说明/验收类文件不再保留；上板流程见 §八，文件可从 git 历史找回）。
 - **本地保留但不入库**（见 `.gitignore`）：`ref/`（课程发布包 + 课程讲义，`ref/README.md` 除外）、`patch/`、各 exp 的 `func/ gettrace/ soc_verify/ module_verify/`（课程包重内容）、历史遗留目录（`prj1/exp6_wt_answer/`、`prj1/sim/`、`prj1/sim_exp1/`、`prj2/exp7_refactor/`）。
 - **对应关系**：2026-10-14 之前文档里的 `prj3/exp10`、`prj3/exp11` 即现 `prj2/exp10`、`prj2/exp11`；`prj3/logs` 即现 `prj2/logs`；原独立仓库目录 `loongarch-cpu-labs/` 已并入工作区根（即本目录）。
+- **补丁链（仓库内）**：`prj1/exp6/ref_sc` —`exp6_to_exp7`→ exp7 —`exp7_to_exp8`→ exp8 —`exp8_to_exp9`→ exp9 —`exp9_to_exp10`→ exp10 —`exp10_to_exp11`→ exp11；各段用 `git -c core.autocrlf=false apply -p1` 应用后与目标 RTL 逐字节一致（exp6→7→8→9 于 2026-09-29 复验；9→10 于 2026-10-13 生成复验；10→11 于 2026-10-14 重制复验）。
 - **本次重构提交**：`6ed35e9`（远端 main）。
