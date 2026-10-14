@@ -1,7 +1,7 @@
 # 计算机体系结构研讨课 —— 工作区说明（当前状态）
 
 > 快照时间：2026-09-08（2026-10-12 增补 exp10/11 入库，见 §十二；2026-10-14 两轮结构整理：本目录=仓库根、prj1/prj2 平铺、viz/ 独立线、ref/ 收纳课程包与讲义，见 §十五）。本文件为工作区唯一顶层说明文件；历史操作记录见 §五/§六。
-> 口径（2026-10-12）：课程作业/仿真/验收/提交一律以**课程网站发布包**为准（`课程发布包/`）；官方 gitee 包与超前实验 exp12~20（尚未发布）已归档至 `C:\course_files\2026_autumn\资料库\`，平时不参与课程工作流；exp10/11 课程包已发布并入库（见 §十二）。
+> 口径（2026-10-14）：课程作业/仿真/验收/提交一律以**课程网站发布包**为准（`ref/课程发布包/`）；官方 gitee 包与超前实验 exp14~20（尚未发布）已归档至 `C:\course_files\2026_autumn\资料库\`，平时不参与课程工作流；exp10/11（§十二）、exp12/13（§十六）课程包已发布并入库。
 > 实验推进约定：课程发布包 → 工作副本 `prj1/ prj2/`（下分 expN）→ 功能仿真（2026-09-15 起 Vivado xsim）→ Vivado 工程 `C:\vivado_prj\expNN`（英文路径，产出 bit）。
 
 ## 一、目录总览
@@ -54,7 +54,7 @@ C:\course_files\2026_autumn\
 - 课程站包 = 按实验裁剪+修订版（myCPU 空起步、func 为课程修订测试集、gettrace 为课程参考核），与官方 gitee 同名 Lab 包**不完全相同**（验证框架共同文件逐字节一致，差异集中在 func/gettrace/myCPU）；验收/提交一律用课程站包。
 - 课程站包解压即 prj1/prj2 内工作目录的原始版；prj1/prj2 现为**已开工完成版**（myCPU 已填；exp10/11 于 2026-10-12 按课程包复验通过）；勿用 zip 重新解压覆盖已完成代码。
 - exp2~5 未在课程网站出现；官方 Lab01~04（官方版 exp1/6~9 等）原件在 `资料库\官方实验包\`。
-- exp10/11 课程包已于 2026-10-12 发布并入库（`课程发布包/exp10.zip`、`exp11.zip`；工作副本 `prj3/exp10`、`prj3/exp11`）；**exp12~20 尚未发布**，其超前完成的工作副本仍归档 `资料库\prj3_7_超前实验_未发布\`。
+- exp10/11 课程包已于 2026-10-12 发布并入库（`ref/课程发布包/exp10.zip`、`exp11.zip`；工作副本 `prj3/exp10`、`prj3/exp11`）；**exp12/13 已于 2026-10-14 发布入库（见 §十六）**，exp14~20 尚未发布，其超前完成的工作副本仍归档 `资料库\prj3_7_超前实验_未发布\`。
 
 ## 三、课程主线完成状态（截至 2026-10-12）
 
@@ -90,7 +90,7 @@ C:\course_files\2026_autumn\
 
 ### 4.2 一个实验从取包到提交的完整流程（以 expN 为例）
 
-1. **取包**：`课程发布包/expN.zip` 解压到 `prj1/`（exp1 / exp6）或 `prj2/`（exp7~11）。
+1. **取包**：`ref/课程发布包/expN.zip` 解压到 `prj1/`（exp1 / exp6）、`prj2/`（exp7~9）、`prj3/`（exp10/11）或 `prj4/`（exp12/13）。
    ⚠️ `prj1/`、`prj2/` 里是**已完成版**，重新解压会覆盖 `myCPU/`，动手前先备份或另存目录。
 2. **改代码**：只动 `myCPU/` 下四个文件（`alu.v` / `regfile.v` / `tools.v` / `mycpu_top.v`）。
    `func/`（测试程序）、`gettrace/`（参考执行流）、`soc_verify/`（SoC 平台）都是只读的。
@@ -139,7 +139,7 @@ C:\course_files\2026_autumn\
 
 | 原位置 | 现位置 | 说明 |
 |---|---|---|
-| 本目录根 exp1/6/7/8/9.zip | `课程发布包/`（课程目录内） | 课程网站原件，唯一正本，SHA256 见资料库整理记录 |
+| 本目录根 exp1/6/7/8/9.zip | `ref/课程发布包/`（课程目录内） | 课程网站原件，唯一正本，SHA256 见资料库整理记录 |
 | prj2/exp7~9.zip | `资料库\prj2_zip历史副本_已核对/` | 与课程发布包逐文件 SHA256 一致 |
 | 官方实验包/ | `资料库\官方实验包/` | Lab01~Lab09_exp20 全套（zip + _extracted + README，约 510 MB） |
 | prj3~prj7/ | `资料库\prj3_7_超前实验_未发布/prj3~prj7/` | exp10~20 超前工作副本（含 myCPU/logs，勿删） |
@@ -229,12 +229,12 @@ C:\course_files\2026_autumn\
 - 板子重烧（2026-09-15 20:22）：板子接回后重烧 exp8 的 bit（`impl_1/soc_lite_top.bit`，md5 `5a4a6484…826b`，与提交包内逐字节一致），`xc7a200t_0`、`End of startup status: HIGH`、`=== PROGRAM DONE ===`；日志 `prj2/logs/exp8_program_20260915b.log`。首连报 `jsn1 may be locked by another hw_server`，清掉残留 `hw_server` / `cs_server` 进程后重试即过（与 §八 记录的现象一致）。
 - exp8 阅读版注释（2026-09-15 晚，用户要求）：`prj2/exp8/myCPU/mycpu_top.v` 加了**行尾中文注释**（标 `【阻塞】` / `【cancel】` 两类冒险的处理点，503 → 509 行；剔除注释后代码逐行不变、xvlog 0 ERROR）。**注意**：该文件因此不再与提交包内同名文件逐字节一致（另外三个 `.v` 仍一致），也已与 `C:\vivado_prj\exp8\myCPU\` 分叉 —— 交付包 / 包内 patch / 仿真源一律未动，此文件仅供阅读；原件备份 `%TEMP%\mycpu_top.v.bak_pre_zh_20260915`。
 - **exp7 包按新链重制 + 三链闭环复验（2026-09-29，用户要求）**：`patch/prj2_exp7_3_2024K8009929018.zip` 重打包 = 新链 exp7 RTL（`myCPU/`，mycpu_top.v 15367 B）+ `patch/mycpu_exp7_pipeline_vs_exp6.patch`（新链 exp6→exp7，551 行；**基线 = exp6 修正版单周期 `prj1/sim/ref_sc`**）+ 2026-09-15 重出 bit（WNS 3.922 ns）；解包核验目录 `patch/prj2_exp7_3_2024K8009929018/`；新包 md5 `0c5175ff…`，旧包（09-08 旧口径，md5 `b2602354…`）改名保留为 `patch/prj2_exp7_3_2024K8009929018_old20260908.zip`。闭环复验（`git -c core.autocrlf=false apply`）：`ref_sc` + 包内 patch → exp7 包 myCPU；+ `prj2_exp8…zip` 包内 patch → exp8 包 myCPU；+ `prj2_exp9…zip` 包内 patch → exp9 包 myCPU，三段逐字节一致。
-- exp6→exp7 patch 基线说明（2026-09-29 取证）：课程包 `课程发布包/exp6.zip` 内 `exp6_wt_answer/myCPU/mycpu_top.v` 为 8415 B **单周期**版；`prj1/sim/ref_sc/` 是其修正版（+2/−1 行），即本次 patch 的基线。`prj1/exp6_wt_answer/myCPU`（15588 B）是当年做旧链 exp7 时留下的**流水线工作稿**，勿与单周期修正版混淆。
+- exp6→exp7 patch 基线说明（2026-09-29 取证）：课程包 `ref/课程发布包/exp6.zip` 内 `exp6_wt_answer/myCPU/mycpu_top.v` 为 8415 B **单周期**版；`prj1/sim/ref_sc/` 是其修正版（+2/−1 行），即本次 patch 的基线。`prj1/exp6_wt_answer/myCPU`（15588 B）是当年做旧链 exp7 时留下的**流水线工作稿**，勿与单周期修正版混淆。
 - 同学材料（2026-09-29）：exp8/9 提交包 `给同学_exp8or9_提交包_20260929.zip` 放课程根目录（传用；副本与记录见 `同学参考/README.md`）。
 
 ## 十二、2026-10-12 exp10/11 课程包入库与超前版对照
 
-- **来源与入库**：`C:\Users\17613\Downloads\download_from_edge_server\exp10.zip`（SHA256 1CB2A569…F0E）、`exp11.zip`（SHA256 C5DE1BF2…33A）已复制入 `课程发布包/`；解出工作副本 `prj3/exp10`（122 文件）、`prj3/exp11`（120 文件）并建 `prj2/logs/`；解包与源 zip 逐文件哈希核对 diff=0。
+- **来源与入库**：`C:\Users\17613\Downloads\download_from_edge_server\exp10.zip`（SHA256 1CB2A569…F0E）、`exp11.zip`（SHA256 C5DE1BF2…33A）已复制入 `ref/课程发布包/`；解出工作副本 `prj3/exp10`（122 文件）、`prj3/exp11`（120 文件）并建 `prj2/logs/`；解包与源 zip 逐文件哈希核对 diff=0。
 - **全量扫描：exp10/11 已跑过（超前版）**——`资料库\prj3_7_超前实验_未发布\prj3\` 内为超前完成版（myCPU 四文件已填）：exp10 n1~n36 全 PASS（`资料库\prj3_7_超前实验_未发布\prj3\logs\exp10_run.log`，2026-09-03）、exp11 n1~n46 全 PASS（`资料库\prj3_7_超前实验_未发布\prj3\logs\exp11_run.log`）；bit 已出（`C:\vivado_prj\exp10`、`C:\vivado_prj\exp11`，50 MHz：exp10 WNS+0.925/WHS+0.077、exp11 WNS+0.448/WHS+0.084，0 违规）；均未上板（当时板级未要求）。全量记录见 `资料库\研讨-计算机体系结构_README_20260904历史版.md`。
 - **课程包 vs 超前版（官方包口径）对照**：新课程包与官方包 87 个文件不同（func 的 include / init.S / start.S / Makefile / 全部 n*.S / obj 镜像、gettrace 的 golden_trace.txt 与参考核 SimpleLACoreWrapRAM.v、sync_ram.v、create_project.tcl 等），且测试框架与课程 exp7~9 所用框架**逐字节同源**（asm.h、cpu_cde.h、test_config.h、n*.S 样例、sync_ram.v、mycpu_tb.v 均已哈希核对一致）——新课程包 = 课程修订框架 + 实验 10/11 镜像。`mycpu_tb.v` 与官方完全相同，**旧 myCPU 接口可直接复用**；但旧仿真与 bit 基于官方环境，对课程包**不直接生效，需按课程包复验**（测试范围不变：exp10 n1~n36、exp11 n1~n46；2026-10-12 复验通过，见下）。
 - **复验结果（2026-10-12）**：超前版 myCPU 已拷入 `prj3/exp10`、`prj3/exp11`，课程包的 testbench / gettrace / inst_ram.mif 已同步进 `C:\vivado_prj\exp10`、`exp11` 工程树；用 `run_sim_cli.bat 10` / `11`（Windows Vivado 2019.2 xsim）复跑：**exp10 n1~n36 全 PASS（1126075 ns）**、**exp11 n1~n46 全 PASS（1419475 ns）**，耗时 16 / 21 s、峰值约 224 MB；日志 `prj3/logs/exp10_xsim_run_20261012.log`、`exp11_xsim_run_20261012.log`。
