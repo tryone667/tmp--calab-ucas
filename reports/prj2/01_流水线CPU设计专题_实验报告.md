@@ -15,7 +15,7 @@
 
 按课程口径，三个任务交付的是**三个逐级增量**的版本，每版只在上版基础上叠加一处机制，提交时附“相对上一实验”的逐文件 patch：
 
-| 任务 | 这一版新增的机制 | 镜像 | 提交物 |
+| 任务 | 这一版新增的机制 | 镜像 | 提交包 |
 |---|---|---|---|
 | 7 | 五级流水骨架本身；**不处理任何冒险**（靠镜像里的 nop 拉开相关指令的距离） | `NOP_INSERT=1` | `prj2/exp7/myCPU` + `patch/exp6_to_exp7.patch` |
 | 8 | `cancel` 解控制冒险 + **阻塞**解数据冒险（相关指令等到新值能从寄存器堆读到才放行） | `NOP_INSERT=0` | `prj2/exp8/myCPU` + `patch/exp7_to_exp8.patch` |
@@ -166,9 +166,9 @@ Vivado 2019.2，器件 xc7a200tfbg676-1。三阶段重构后（2026-09-15）三�
 
 | 任务 | 提交包 | patch |
 |---|---|---|
-| 7 | `提交物/prj2_exp7_3_2024K8009929018.zip` | `patch/`（相对实践 6 的改动，仅 `alu.v` 与 `mycpu_top.v` 有变更） |
-| 8 | `提交物/prj2_exp8_3_2024K8009929018.zip` | `patch/mycpu_exp8_cancel_block_vs_exp7.patch` |
-| 9 | `提交物/prj2_exp9_3_2024K8009929018.zip` | `patch/mycpu_exp9_forward_vs_exp8.patch` |
+| 7 | `patch/prj2_exp7_3_2024K8009929018.zip` | `patch/`（相对实践 6 的改动，仅 `alu.v` 与 `mycpu_top.v` 有变更） |
+| 8 | `patch/prj2_exp8_3_2024K8009929018.zip` | `patch/mycpu_exp8_cancel_block_vs_exp7.patch` |
+| 9 | `patch/prj2_exp9_3_2024K8009929018.zip` | `patch/mycpu_exp9_forward_vs_exp8.patch` |
 
 ## 五、调试记录
 
