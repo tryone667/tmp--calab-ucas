@@ -315,14 +315,20 @@ wire [31:0] ex_alu_result;   // EX stage ALU result (combinational)
 wire [31:0] mem_value;       // MEM stage result
 wire [31:0] wb_result;       // WB stage result
 
-wire [31:0] id_rj_value  = fwd_ex_to_rj  ? ex_alu_result :
-                           fwd_mem_to_rj ? mem_value     :
-                           fwd_wb_to_rj  ? wb_result     :
-                                           rf_rdata1     ;
-wire [31:0] id_rkd_value = fwd_ex_to_rkd  ? ex_alu_result :
-                           fwd_mem_to_rkd ? mem_value     :
-                           fwd_wb_to_rkd  ? wb_result     :
-                                            rf_rdata2    ;
+// no-forward is the common case: test "need forward?" first and read the
+// regfile straight through; only a hit walks the EX > MEM > WB chain
+wire rj_fwd_hit  = fwd_ex_to_rj  | fwd_mem_to_rj  | fwd_wb_to_rj ;
+wire rkd_fwd_hit = fwd_ex_to_rkd | fwd_mem_to_rkd | fwd_wb_to_rkd;
+
+wire [31:0] rj_fwd_value  = fwd_ex_to_rj  ? ex_alu_result :
+                            fwd_mem_to_rj ? mem_value     :
+                                            wb_result     ;
+wire [31:0] rkd_fwd_value = fwd_ex_to_rkd  ? ex_alu_result :
+                            fwd_mem_to_rkd ? mem_value     :
+                                             wb_result     ;
+
+wire [31:0] id_rj_value  = rj_fwd_hit  ? rj_fwd_value  : rf_rdata1;
+wire [31:0] id_rkd_value = rkd_fwd_hit ? rkd_fwd_value : rf_rdata2;
 
 // ---- branch resolved in ID ----
 wire rj_eq_rd = (id_rj_value == id_rkd_value);

@@ -35,7 +35,7 @@ C:\course_files\2026_autumn\
 | exp6.zip | exp6 | 单周期 20 指令找错 | n1~n20 | prj1/exp6_wt_answer | PASS + 已上板 |
 | exp7.zip | exp7 | 五级流水：不考虑冒险（镜像插 nop） | n1~n20 | prj2/exp7 | 三阶段版 PASS（2058995 ns）；bit 2026-09-15 重出；提交包是否重制见 §十一 |
 | exp8.zip | exp8 | cancel 解 control hazard + 阻塞解 data hazard | n1~n20 | prj2/exp8 | 三阶段版 PASS（1349305 ns）；bit 2026-09-15 重出；提交包 `patch/prj2_exp8_3_2024K8009929018.zip`（2026-09-15 上板复验全 PASS） |
-| exp9.zip | exp9 | forward 优化 | n1~n20 | prj2/exp9 | 三阶段版 PASS（639855 ns）；bit 2026-09-15 重出；提交包 `patch/prj2_exp9_3_2024K8009929018.zip` |
+| exp9.zip | exp9 | forward 优化 | n1~n20 | prj2/exp9 | 三阶段版 PASS（639855 ns）；bit 2026-09-15 重出；提交包 `patch/prj2_exp9_3_2024K8009929018.zip`；**2026-10-14 前递选路优化（助教反馈）：逐拍等价复验 PASS、bit 重出（WNS 2.067 ns），见 §十八** |
 | exp10.zip | exp10 | 用户态运算指令 | n1~n36 | prj3/exp10 | ✅ 课程包 xsim 复验 n1~n36 PASS（2026-10-12，见 §十二）；超前版 bit 已出、未烧 |
 | exp11.zip | exp11 | 转移+访存指令 | n1~n46 | prj3/exp11 | ✅ 课程包复验 n1~n46 PASS（2026-10-12）；**2026-10-14 除法器优化版复验 PASS（1234675 ns，-13%，见 §十七）**；超前版 bit 已出、未烧 |
 | exp12.zip | exp12 | syscall 例外（TEST4） | n1~n47 | prj4/exp12 | ✅ 课程包 xsim 复验 n1~n47 PASS（2026-10-14，见 §十六）；超前版 bit 已出、未烧 |
@@ -296,3 +296,13 @@ C:\course_files\2026_autumn\
 - **复验**：课程包 xsim **n1~n46 全 PASS**；`$finish` **1419475 → 1234675 ns（约 -13%）**；日志 `prj3/logs/exp11_xsim_run_20261014_opt.log`（优化前版 `exp11_xsim_run_20261013_clean.log` 保留）。`exp10→exp11` 补丁已重制（25324 B）并闭环复验（逐字节一致）。
 - **报告 Demo（待优化）**：`reports/prj3/02_添加用户态指令设计专题_实验报告.md`（实践 10/11）、`reports/prj4/03_异常与中断设计专题_实验报告.md`（实践 12/13）——均标注「Demo v0：已跑通；报告待优化」；prj4 稿已含 ECFG 保留位（R0）bug 的完整定位/修复记录。（更新：prj3 稿已升级 v1——新增「课上助教反馈与对应优化」核心章节并整理排版，出 3 页 PDF；顺带修复 prj2 的 01 报告 PDF 一处误生成水印。）
 - **待办**：① 报告打磨（补图、补调试案例、统一体例）；② 课程包口径 bit 重出（exp10/11/12/13）；③ exp12/13 增量 patch 生成。
+
+## 十八、2026-10-14 晚（三）：exp9 前递选路优化（prj2）
+
+- **背景（助教反馈）**：exp9 验收后助教建议——三路前递的四选一优先级链把“不前递”（占比最高的常见情形）压在了链条末端；应改为**先判断“要不要前递”**：不前递直接读寄存器堆，需要前递再走 EX > MEM > WB 优先级链。
+- **改动**（`prj2/exp9/myCPU/mycpu_top.v`，`id_rj_value` / `id_rkd_value` 两处）：拆成“hit 判定 + 两级选择”——`rj_fwd_hit = fwd_ex | fwd_mem | fwd_wb`、内层 `fwd_ex ? ex : (fwd_mem ? mem : wb)`、末级 `hit ? 前递值 : rf_rdata`。语义不变；寄存器堆读出值由穿三级选择链变为只过一级 2:1 选择。
+- **等价性复验**：课程包 xsim **n1~n20 全 PASS**，20 个测试点时刻与 `$finish`（640355 ns）与改前**逐点一致**（逐拍等价）；日志 `prj2/logs/exp9_xsim_run_20261014_fwdopt.log`（基线 `exp9_xsim_run_20260929.log`）。
+- **时序**：重跑综合 / 实现 / 出 bit（2026-10-14 17:26）——布线后 **WNS 2.067 / TNS 0.000 / WHS 0.063 ns**（优化前 2.112 / 0.000 / 0.085；差异约 0.2% 周期，属实现重排与布线波动量级，两版均满收敛）；日志 `prj2/logs/exp9_vivado_20261014_fwdopt.log`。新 bit 在 `C:\vivado_prj\exp9\soc_verify\soc_bram\run_vivado\project\loongson.runs\impl_1\soc_lite_top.bit`（未上板）。
+- **补丁链**：`exp8_to_exp9.patch` 重制（4051 → 4361 B）并全链闭环复验——`ref_sc → exp7 → exp8 → exp9` 三段 `git -c core.autocrlf=false apply` 后与各目标版本逐字节一致。
+- **报告**：prj2 报告升级——新增「四、课上助教反馈与对应优化」章节（优化前后对照 + 关键路径说明），验证表补优化行；重出 PDF（10 页）：`reports/prj2/01_流水线CPU设计专题_实验报告_林岳_2024K8009929018.pdf`。
+- **待办**：① 报告打磨（补图、补调试案例、统一体例）；② 课程包口径 bit 重出（exp10/11/12/13）；③ exp9 提交包按新 RTL + 新 bit 重打包；④ exp12/13 增量 patch 生成。

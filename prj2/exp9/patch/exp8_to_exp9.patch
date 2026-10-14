@@ -1,5 +1,5 @@
 diff --git a/myCPU/mycpu_top.v b/myCPU/mycpu_top.v
-index ada8f39..6da6f4c 100644
+index ada8f39..73ce3cc 100644
 --- a/myCPU/mycpu_top.v
 +++ b/myCPU/mycpu_top.v
 @@ -1,7 +1,7 @@
@@ -12,7 +12,7 @@ index ada8f39..6da6f4c 100644
  //  - control hazard : branch resolved in ID; taken branch cancels the
  //                     wrong-path insts in if_req/IF and redirects the PC
  //  - inst/data RAM : synchronous read model (rdata returns one cycle after the
-@@ -310,13 +310,19 @@ wire id_uses_rkd = inst_add_w | inst_sub_w | inst_slt | inst_sltu
+@@ -310,13 +310,25 @@ wire id_uses_rkd = inst_add_w | inst_sub_w | inst_slt | inst_sltu
                   | inst_and | inst_or | inst_nor | inst_xor
                   | inst_beq | inst_bne | inst_st_w;
  
@@ -24,18 +24,24 @@ index ada8f39..6da6f4c 100644
  
 -wire [31:0] id_rj_value  = rf_rdata1;
 -wire [31:0] id_rkd_value = rf_rdata2;
-+wire [31:0] id_rj_value  = fwd_ex_to_rj  ? ex_alu_result :
-+                           fwd_mem_to_rj ? mem_value     :
-+                           fwd_wb_to_rj  ? wb_result     :
-+                                           rf_rdata1     ;
-+wire [31:0] id_rkd_value = fwd_ex_to_rkd  ? ex_alu_result :
-+                           fwd_mem_to_rkd ? mem_value     :
-+                           fwd_wb_to_rkd  ? wb_result     :
-+                                            rf_rdata2    ;
++// no-forward is the common case: test "need forward?" first and read the
++// regfile straight through; only a hit walks the EX > MEM > WB chain
++wire rj_fwd_hit  = fwd_ex_to_rj  | fwd_mem_to_rj  | fwd_wb_to_rj ;
++wire rkd_fwd_hit = fwd_ex_to_rkd | fwd_mem_to_rkd | fwd_wb_to_rkd;
++
++wire [31:0] rj_fwd_value  = fwd_ex_to_rj  ? ex_alu_result :
++                            fwd_mem_to_rj ? mem_value     :
++                                            wb_result     ;
++wire [31:0] rkd_fwd_value = fwd_ex_to_rkd  ? ex_alu_result :
++                            fwd_mem_to_rkd ? mem_value     :
++                                             wb_result     ;
++
++wire [31:0] id_rj_value  = rj_fwd_hit  ? rj_fwd_value  : rf_rdata1;
++wire [31:0] id_rkd_value = rkd_fwd_hit ? rkd_fwd_value : rf_rdata2;
  
  // ---- branch resolved in ID ----
  wire rj_eq_rd = (id_rj_value == id_rkd_value);
-@@ -330,17 +336,20 @@ wire [31:0] br_target;
+@@ -330,17 +342,20 @@ wire [31:0] br_target;
  assign br_target = (inst_beq || inst_bne || inst_bl || inst_b) ? (if_pc + br_offs) :
                                                      /*inst_jirl*/ (id_rj_value + jirl_offs);
  
