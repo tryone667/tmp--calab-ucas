@@ -15,7 +15,7 @@ C:\course_files\2026_autumn\
 │   ├── 实验报告/              报告要求 + 模板 + 专题报告 md/PDF + figures（见 §九）
 │   ├── tools/                 run_sim_cli.bat（xsim 一键脚本）
 │   ├── ref/                   课程发布包 + 课程讲义（本地参考，不入库；见 ref/README.md）
-│   ├── 提交物/                提交包存档（本地保留，不入库）
+│   ├── patch/                 提交包存档：5 个提交 zip（本地保留，不入库）
 │   └── README.md              ← 本文件
 └── 资料库/                    归档区：官方实验包、prj3~7 超前实验、tmpfig、zip 历史副本（见其 README）
 ```
@@ -32,8 +32,8 @@ C:\course_files\2026_autumn\
 | exp1.zip | exp1 | 跑马灯（Vivado/FPGA 入门） | — | prj1/exp1 | PASS + 已上板 |
 | exp6.zip | exp6 | 单周期 20 指令找错 | n1~n20 | prj1/exp6_wt_answer | PASS + 已上板 |
 | exp7.zip | exp7 | 五级流水：不考虑冒险（镜像插 nop） | n1~n20 | prj2/exp7 | 三阶段版 PASS（2058995 ns）；bit 2026-09-15 重出；提交包是否重制见 §十一 |
-| exp8.zip | exp8 | cancel 解 control hazard + 阻塞解 data hazard | n1~n20 | prj2/exp8 | 三阶段版 PASS（1349305 ns）；bit 2026-09-15 重出；提交包 `提交物/prj2_exp8_3_2024K8009929018.zip`（2026-09-15 上板复验全 PASS） |
-| exp9.zip | exp9 | forward 优化 | n1~n20 | prj2/exp9 | 三阶段版 PASS（639855 ns）；bit 2026-09-15 重出；提交包 `提交物/prj2_exp9_3_2024K8009929018.zip` |
+| exp8.zip | exp8 | cancel 解 control hazard + 阻塞解 data hazard | n1~n20 | prj2/exp8 | 三阶段版 PASS（1349305 ns）；bit 2026-09-15 重出；提交包 `patch/prj2_exp8_3_2024K8009929018.zip`（2026-09-15 上板复验全 PASS） |
+| exp9.zip | exp9 | forward 优化 | n1~n20 | prj2/exp9 | 三阶段版 PASS（639855 ns）；bit 2026-09-15 重出；提交包 `patch/prj2_exp9_3_2024K8009929018.zip` |
 | exp10.zip | exp10 | 用户态运算指令 | n1~n36 | prj2/exp10 | ✅ 课程包 xsim 复验 n1~n36 PASS（2026-10-12，见 §十二）；超前版 bit 已出、未烧 |
 | exp11.zip | exp11 | 转移+访存指令 | n1~n46 | prj2/exp11 | ✅ 课程包 xsim 复验 n1~n46 PASS（2026-10-12）；超前版 bit 已出、未烧 |
 
@@ -65,7 +65,7 @@ C:\course_files\2026_autumn\
 | exp11 转移+访存 | ✅ **课程包复验** n1~n46 PASS（prj2/logs/exp11_xsim_run_20261012.log，2026-10-12；超前版 09-03 亦 PASS）；**2026-10-13 验收通过并按助教意见清理后复跑同 PASS（1419475 ns，逐拍等价，见 §十三）** | 超前版 bit 已出（WNS+0.448/WHS+0.084）；课程包口径 bit 待重出 | 未烧 |
 
 - 仿真日志命名：2026-09-15 之前是 iverilog（`prj2/logs/expN_run.log`）；之后统一 Vivado xsim（`prj2/logs/expN_xsim_run.log`）。
-- exp7 提交包：`提交物/prj2_exp7_3_2024K8009929018.zip`（myCPU 四文件 + patch/ + soc_lite_top.bit；2026-09-08 全新 iverilog 仿真 n1~n20 全 PASS，日志 `prj2/logs/exp7_acceptance_sim.log`）。
+- exp7 提交包：`patch/prj2_exp7_3_2024K8009929018.zip`（myCPU 四文件 + patch/ + soc_lite_top.bit；2026-09-08 全新 iverilog 仿真 n1~n20 全 PASS，日志 `prj2/logs/exp7_acceptance_sim.log`）。
 - 超前实验 exp10~20 的完成状态/时序/上板记录见 `资料库\研讨-计算机体系结构_README_20260904历史版.md`（09-04 全量快照）；exp10/11 课程包入库与复验计划见 §十二。
 - **验收**：exp7~11 已全部通过验收（2026-10-13 课堂验收收尾；此前 exp7~9 随堂验收、exp10/11 于 2026-10-13 通过），exp11 附助教改进意见，见 §十三。
 
@@ -120,7 +120,7 @@ C:\course_files\2026_autumn\
    产物：`...\project\loongson.runs\impl_1\soc_lite_top.bit`。判据：日志中综合/实现 0 Error、时序 WNS > 0。
    ⚠️ Vivado 工程里的 `myCPU` 副本比工作区多一行 `` `timescale ``（纯仿真指令，综合时无影响），代码其余部分逐字节等价；**以工作区为准**，别反向覆盖。
 5. **上板验证**（按需；脚本与手动流程见 §八）：日志出现 `=== PROGRAM DONE ===`；板卡数码管停在 `0x14000014`、双绿灯亮 = n1~n20 全 PASS。
-6. **打包提交**（命名 `prjN_expM_箱子号_学号.zip`）：`myCPU/`（四文件）+ `patch/`（相对上一实验的 git 风格 unified diff，做法见 `课程讲义/A03_提交patch指导/`）+ `soc_lite_top.bit`。成品放 `提交物/`。
+6. **打包提交**（命名 `prjN_expM_箱子号_学号.zip`）：`myCPU/`（四文件）+ `patch/`（相对上一实验的 git 风格 unified diff，做法见 `课程讲义/A03_提交patch指导/`）+ `soc_lite_top.bit`。成品放 `patch/`（工作区根的提交归档目录）。
 7. **写报告**：复制 `实验报告/报告模板.md` 为 `实验报告/NN_<专题>_实验报告.md`，插图放 `实验报告/figures/`（详见 §九）。
 
 ### 4.3 常用命令与善后
@@ -149,12 +149,12 @@ C:\course_files\2026_autumn\
 - Vivado：`C:\Application\Xilinx\Vivado\2019.2`（xc7a200tfbg676-1）；仿真镜像 `C:\simw\expNN`；Vivado 工程与 bit `C:\vivado_prj\expNN`。
 - 2026-09-02：exp1/exp6~9 全部完成综合+实现+bit，均已上板全 PASS（n1~n20，数码管 14000014 = 第 20 点）。
 - 2026-09-03~04：官方全套入库对照、exp10~20 超前完成（功能仿真全 PASS + bit），README 于 09-04 汇总重写（细节见历史版）。
-- 2026-09-08：确立“课程网站包为准”口径；官方包与超前内容归档 资料库；exp7 验收复跑 PASS（日志 `prj2/logs/exp7_acceptance_sim.log`）；验收专用副本目录已删除，提交包并入 `提交物/`（见 §七）。
+- 2026-09-08：确立“课程网站包为准”口径；官方包与超前内容归档 资料库；exp7 验收复跑 PASS（日志 `prj2/logs/exp7_acceptance_sim.log`）；验收专用副本目录已删除，提交包并入 `patch/`（见 §七）。
 - 2026-09-15：Smart App Control（约 09-10 由 Windows 自动开启）开始拦截 Vivado 未签名 DLL `librdi_tcltasks.dll`（CodeIntegrity 事件 3077），Vivado 完全无法启动，出 bit 与上板全被堵；当日关闭 SAC（`HKLM\SYSTEM\CurrentControlSet\Control\CI\Policy` 的 `VerifiedAndReputablePolicyState`，1→0）后恢复。**排查提示：若 Vivado 突然报 `couldn't load library librdi_tcltasks.dll: invalid argument`，先查这一条。**
 
 ## 七、2026-09-08 晚：提交包与验收副本合并
 
-- 正式提交包：`提交物/prj2_exp7_3_2024K8009929018.zip`（作业命名 prj2_exp7_箱子号_学号：箱子号 3，学号 2024K8009929018）；同内容解包目录 `提交物/prj2_3_2024K8009929018/` 便于现场检查。
+- 正式提交包：`patch/prj2_exp7_3_2024K8009929018.zip`（作业命名 prj2_exp7_箱子号_学号：箱子号 3，学号 2024K8009929018）；同内容解包目录 `patch/prj2_3_2024K8009929018/` 便于现场检查。
 - 结构：`myCPU/`（alu/regfile/tools/mycpu_top）+ `patch/mycpu_exp7_pipeline_vs_exp6.patch`（exp6 完成版 `prj1/exp6_wt_answer/myCPU` → exp7，git 风格 unified diff，仅 alu.v/mycpu_top.v 有改动）+ `soc_lite_top.bit`。
 - 核验：zip 内 myCPU 四文件与 bit 均与 2026-09-08 13:45 烧板全 PASS（0x14000014 + 双绿，`prj2/logs/exp7_program_20260908.log`）所用文件 SHA256 逐字节一致。
 - 原 `C:\course_files\2026_autumn\exp7_acceptance\` 验收副本已删除（内容均为课程发布包/工作区派生件，无独有文件）；验收仿真日志转存 `prj2/logs/exp7_acceptance_sim.log`。
@@ -183,7 +183,7 @@ C:\course_files\2026_autumn\
 | `figures/fig2_fetch_timing.svg` | 图 2 取指“请求—返回”配对与 load-use 停顿时序图 |
 | `figures/fig3_branch_flush.svg` | 图 3 分支在 ID 判出的冲刷时序图 |
 
-- 报告正文按真实 RTL（`prj2/exp7`、`exp8`、`exp9`，与 `提交物/` 里提交版功能等价）与仿真、上板日志写实；第五节「调试记录」已于 2026-10-13 补全（四个真实案例：三阶段重构与增量补丁为空、参考流缺失、`xvlog` 前向引用、GUI `$finish` 不退出），并已出 PDF：`01_流水线CPU设计专题_实验报告_林岳_2024K8009929018.pdf`（8 页，页脚+页码）。
+- 报告正文按真实 RTL（`prj2/exp7`、`exp8`、`exp9`，与 `patch/` 里提交版功能等价）与仿真、上板日志写实；第五节「调试记录」已于 2026-10-13 补全（四个真实案例：三阶段重构与增量补丁为空、参考流缺失、`xvlog` 前向引用、GUI `$finish` 不退出），并已出 PDF：`01_流水线CPU设计专题_实验报告_林岳_2024K8009929018.pdf`（8 页，页脚+页码）。
 - 插图是矢量 SVG，可用浏览器 / Inkscape / draw.io 直接查看与再编辑；导出 PNG 后可插入 Word 或 PDF。
 
 ## 十、2026-09-10 整理记录
@@ -195,14 +195,14 @@ C:\course_files\2026_autumn\
 | `.Xil`、`webtalk.jou/.log`、`xelab.log/.pb`、`xvlog.log/.pb`（根目录） | 删除 | Vivado / xsim 运行期自动生成的临时件，下次运行会重新生成 |
 | 5 份 `dump.vcd`（各 exp 的 `testbench/project/` 下 + 同学参考） | 删除 | 仿真波形，合计约 1.02 GB；跑 `make` 可随时重新生成 |
 | `prj1/sim/sim_pipe.vvp` | 删除 | iverilog 编译产物，可重新生成 |
-| `prj2_exp7_3_2024K8009929018.zip`、`prj2_3_2024K8009929018/` | 移入 `提交物/` | 提交包与其解包核验副本成组存放 |
+| `prj2_exp7_3_2024K8009929018.zip`、`prj2_3_2024K8009929018/` | 移入 `patch/` | 提交包与其解包核验副本成组存放 |
 | `flash_board.sh` / `.tcl` / `.log` | 移入 `上板工具/` | 脚本自定位，移动后用法不变（见 §八） |
 | `prj2/sim.log` | 移入 `prj2/logs/sim.log` | 与其余仿真日志同处 |
 | `同学参考/exp7-2_myCPU/` | 删除 | 与 `同学参考/exp7-2/myCPU/` 四文件 + patch **逐字节一致**（SHA256 核对），纯重复 |
 | `同学参考/*.log`（3 个）、3 个 `.DS_Store` | 移入 `logs/` / 删除 | 验证日志集中存放；`.DS_Store` 是 macOS 元数据垃圾 |
 | — | 新建 `实验报告/` | 见 §九 |
 
-根目录现只保留 `README.md` 与 8 个内容目录（课程发布包 / 课程讲义 / 实验报告 / prj1 / prj2 / 提交物 / 上板工具 / 同学参考）。
+根目录现只保留 `README.md` 与 8 个内容目录（课程发布包 / 课程讲义 / 实验报告 / prj1 / prj2 / patch / 上板工具 / 同学参考）。
 
 ## 十一、2026-09-15 exp7/8/9 三阶段重构
 
@@ -218,7 +218,7 @@ C:\course_files\2026_autumn\
 - 对照实验（证明三阶段不能合并）：`prj2/logs/exp7_on_exp8image_fail_20260915.log` —— exp7 的 RTL 放进 exp8 镜像，第 2077 ns 报 `Error!!!`。
 - 仿真日志：`prj2/logs/exp{7,8,9}_run.log`（重构后重跑；旧版留档 `*_20260902_fullver.log`）；构建日志 `prj2/logs/exp{7,8,9}_vivado_20260915.log`。
 - bit：三版均已重出（`C:\vivado_prj\exp{7,8,9}`，WNS 3.922 / 2.499 / 2.112 ns，时序全部收敛）；旧 bit 备份为 `soc_lite_top_20260908_backup.bit`（exp7）与 `soc_lite_top_20260902_backup.bit`（exp8 / exp9）。
-- 提交包：`提交物/prj2_exp8_3_2024K8009929018.zip`、`提交物/prj2_exp9_3_2024K8009929018.zip` 已按新 RTL 打包（结构同 exp7 包：myCPU/ + patch/ + soc_lite_top.bit，zip 条目用正斜杠），并各留一份解包核验目录（哈希逐文件核对一致）；exp7 旧包（09-08 的旧版 RTL + 旧 patch，与新 patch 链基线不一致）暂保留，是否重制见下条复盘。 2026-09-15 交件前把 patch 里的 `100755` 归一为 `100644`（消除 `git apply` 模式告警）并重打包复验：patch 应用后与目标 RTL 逐字节一致、bit 与工程一致；exp8 包 md5 `e36733b817aa`、exp9 包 md5 `e651374f7e5b`，原包备份在 `提交物/backup_20260915/`。
+- 提交包：`patch/prj2_exp8_3_2024K8009929018.zip`、`patch/prj2_exp9_3_2024K8009929018.zip` 已按新 RTL 打包（结构同 exp7 包：myCPU/ + patch/ + soc_lite_top.bit，zip 条目用正斜杠），并各留一份解包核验目录（哈希逐文件核对一致）；exp7 旧包（09-08 的旧版 RTL + 旧 patch，与新 patch 链基线不一致）暂保留，是否重制见下条复盘。 2026-09-15 交件前把 patch 里的 `100755` 归一为 `100644`（消除 `git apply` 模式告警）并重打包复验：patch 应用后与目标 RTL 逐字节一致、bit 与工程一致；exp8 包 md5 `e36733b817aa`、exp9 包 md5 `e651374f7e5b`，原包备份在 `patch/backup_20260915/`。
 - 工程同步：`C:\vivado_prj\exp{7,9}\myCPU` 已换为新 RTL，旧文件保留 `.bak_20260908` / `.bak_20260902` 后缀。
 - 旧包复盘（2026-09-15）：09-08 旧 exp7 包 patch 共 1030 行（+515/−486），其中已有 **24 处 `fwd_` 前递标记**——exp7 一版就把 exp9 的前递写完，这是 exp8 / exp9 patch 几乎为空的根因。检测法：数 patch 里关键机制标记的出现次数（新链为 exp6→exp7 `fwd_`=0、exp7→exp8 `fwd_`=0 且 `_hit`=6、exp8→exp9 才 `fwd_`=12）。旧 patch 对 exp6 基线 `git apply --check` 退出码 0，基线无问题，属“增量一口气写到底”。exp7 旧包保留不删；是否按新链重制，待与老师确认口径后定。
 - 仿真流程改口径（2026-09-15 晚，用户要求）：**以后仿真一律在 Vivado（xsim）里做**，WSL iverilog 流程停用（仅作应急）。改动：① 把 `gettrace/`（`golden_trace.txt`）补进 `C:\vivado_prj\exp8\`——工程树原来缺它，tb 打不开参考流会每周期刷 `$fscanf` 错（20 秒 1.5 GB 日志，已清）；② 新增 `run_sim_cli.bat`（`xvlog --incr --relax` → `xelab` → `xsim -R`，参数为实验号）。结果：xsim 全流程跑通 `----PASS!!!`（1349305 ns，与 iverilog 历史结果一致；elapsed 13 s，峰值内存 241 MB），日志 `prj2/logs/exp8_xsim_run.log`；GUI 入口为 Run Simulation（注意自动 tcl 只 `run 1000ns`，要 `restart` + `run -all`）。
@@ -226,7 +226,7 @@ C:\course_files\2026_autumn\
 - GUI 仿真 `$finish` 不收尾（2026-09-15 晚实测）：Vivado IDE 里 Run Simulation（`xsim tb_top_behav -tclbatch tb_top.tcl`）跑到 1349305 ns 全 20 点 PASS，`$finish` 也在 1350285 ns 打印了，但交互会话不结束，tb 的 `Test is running` 一直刷到 46.5 ms 后**卡死**（日志末行是半截的 `debug_wb_p`，`xsimk` 进程 CPU 停在 267 s、日志 3 分钟不增长）。逐事件比对证明：GUI 这次与 `run_sim_cli.bat` 那次**逐字相同**，属 IDE 收尾问题、不是设计问题。处置：`Stop-Process -Id <xsimk>` 杀掉即可（不动 IDE）；以后一律用 `run_sim_cli.bat`，或在 GUI 里看到 `----PASS!!!` 就手动停。 另：死会话会占着 `xsim` 目录与工程状态，IDE 报“已有仿真在运行/`simulate.log` 被占用”时，先杀残留 `xsimk`；若启动仿真的那个 `vivado.exe` 已卡死（`Stop-Process` / `taskkill` 都杀不掉、仍占着 `simulate.log` 与 `*.wdb`），用 WMI `Invoke-CimMethod -InputObject (Get-CimInstance Win32_Process -Filter "ProcessId=NNNN") -MethodName Terminate` 杀掉（2026-09-15 实测，无需重启）；2026-09-15 20:39 清掉残留后 CLI 复跑一次 PASS（15 s，日志 `prj2/logs/exp8_xsim_run.log`）。GUI 那次还留下 `tb_top_behav.wdb` 1.48 GB（波形库，可删）。
 - 板子重烧（2026-09-15 20:22）：板子接回后重烧 exp8 的 bit（`impl_1/soc_lite_top.bit`，md5 `5a4a6484…826b`，与提交包内逐字节一致），`xc7a200t_0`、`End of startup status: HIGH`、`=== PROGRAM DONE ===`；日志 `prj2/logs/exp8_program_20260915b.log`。首连报 `jsn1 may be locked by another hw_server`，清掉残留 `hw_server` / `cs_server` 进程后重试即过（与 §八 记录的现象一致）。
 - exp8 阅读版注释（2026-09-15 晚，用户要求）：`prj2/exp8/myCPU/mycpu_top.v` 加了**行尾中文注释**（标 `【阻塞】` / `【cancel】` 两类冒险的处理点，503 → 509 行；剔除注释后代码逐行不变、xvlog 0 ERROR）。**注意**：该文件因此不再与提交包内同名文件逐字节一致（另外三个 `.v` 仍一致），也已与 `C:\vivado_prj\exp8\myCPU\` 分叉 —— 交付包 / 包内 patch / 仿真源一律未动，此文件仅供阅读；原件备份 `%TEMP%\mycpu_top.v.bak_pre_zh_20260915`。
-- **exp7 包按新链重制 + 三链闭环复验（2026-09-29，用户要求）**：`提交物/prj2_exp7_3_2024K8009929018.zip` 重打包 = 新链 exp7 RTL（`myCPU/`，mycpu_top.v 15367 B）+ `patch/mycpu_exp7_pipeline_vs_exp6.patch`（新链 exp6→exp7，551 行；**基线 = exp6 修正版单周期 `prj1/sim/ref_sc`**）+ 2026-09-15 重出 bit（WNS 3.922 ns）；解包核验目录 `提交物/prj2_exp7_3_2024K8009929018/`；新包 md5 `0c5175ff…`，旧包（09-08 旧口径，md5 `b2602354…`）改名保留为 `提交物/prj2_exp7_3_2024K8009929018_old20260908.zip`。闭环复验（`git -c core.autocrlf=false apply`）：`ref_sc` + 包内 patch → exp7 包 myCPU；+ `prj2_exp8…zip` 包内 patch → exp8 包 myCPU；+ `prj2_exp9…zip` 包内 patch → exp9 包 myCPU，三段逐字节一致。
+- **exp7 包按新链重制 + 三链闭环复验（2026-09-29，用户要求）**：`patch/prj2_exp7_3_2024K8009929018.zip` 重打包 = 新链 exp7 RTL（`myCPU/`，mycpu_top.v 15367 B）+ `patch/mycpu_exp7_pipeline_vs_exp6.patch`（新链 exp6→exp7，551 行；**基线 = exp6 修正版单周期 `prj1/sim/ref_sc`**）+ 2026-09-15 重出 bit（WNS 3.922 ns）；解包核验目录 `patch/prj2_exp7_3_2024K8009929018/`；新包 md5 `0c5175ff…`，旧包（09-08 旧口径，md5 `b2602354…`）改名保留为 `patch/prj2_exp7_3_2024K8009929018_old20260908.zip`。闭环复验（`git -c core.autocrlf=false apply`）：`ref_sc` + 包内 patch → exp7 包 myCPU；+ `prj2_exp8…zip` 包内 patch → exp8 包 myCPU；+ `prj2_exp9…zip` 包内 patch → exp9 包 myCPU，三段逐字节一致。
 - exp6→exp7 patch 基线说明（2026-09-29 取证）：课程包 `课程发布包/exp6.zip` 内 `exp6_wt_answer/myCPU/mycpu_top.v` 为 8415 B **单周期**版；`prj1/sim/ref_sc/` 是其修正版（+2/−1 行），即本次 patch 的基线。`prj1/exp6_wt_answer/myCPU`（15588 B）是当年做旧链 exp7 时留下的**流水线工作稿**，勿与单周期修正版混淆。
 - 同学材料（2026-09-29）：exp8/9 提交包 `给同学_exp8or9_提交包_20260929.zip` 放课程根目录（传用；副本与记录见 `同学参考/README.md`）。
 
@@ -274,6 +274,6 @@ C:\course_files\2026_autumn\
 - **prj 平铺**：`prj3/` 取消，exp10/exp11 并入 `prj2/`（流水线系列 exp7~11 统一下分 exp）；每 exp 收录 `myCPU/` + `patch/`（部分带 `reading/`）；仿真/上板日志集中 `prj2/logs/`；exp6 基线归位 `prj1/exp6/ref_sc`（exp6→exp7 patch 的应用对象，原 `exp7/baseline_ref_sc`）。
 - **两条线**：`prj1/`、`prj2/` = 代码线；`viz/`（verilog-viz + datapath-preview）= 可视化线。viz 自包含，对代码只有单向、按需的低耦合（刷新预览时由 `datapath_gen.py` 重新生成），互不改写。
 - **删除（用户确认不再需要）**：`同学参考/`、根目录 `给同学_exp8or9_提交包_20260929.zip`（2026-10-13）；`上板工具/`、`验收准备/`、`exp8_RTL设计说明.md`（2026-10-14 追加，说明/验收类文件不再保留；上板流程见 §八，文件可从 git 历史找回）。
-- **本地保留但不入库**（见 `.gitignore`）：`ref/`（课程发布包 + 课程讲义，`ref/README.md` 除外）、`提交物/`、各 exp 的 `func/ gettrace/ soc_verify/ module_verify/`（课程包重内容）、历史遗留目录（`prj1/exp6_wt_answer/`、`prj1/sim/`、`prj1/sim_exp1/`、`prj2/exp7_refactor/`）。
+- **本地保留但不入库**（见 `.gitignore`）：`ref/`（课程发布包 + 课程讲义，`ref/README.md` 除外）、`patch/`、各 exp 的 `func/ gettrace/ soc_verify/ module_verify/`（课程包重内容）、历史遗留目录（`prj1/exp6_wt_answer/`、`prj1/sim/`、`prj1/sim_exp1/`、`prj2/exp7_refactor/`）。
 - **对应关系**：2026-10-14 之前文档里的 `prj3/exp10`、`prj3/exp11` 即现 `prj2/exp10`、`prj2/exp11`；`prj3/logs` 即现 `prj2/logs`；原独立仓库目录 `loongarch-cpu-labs/` 已并入工作区根（即本目录）。
 - **本次重构提交**：`6ed35e9`（远端 main）。
