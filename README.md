@@ -38,8 +38,8 @@ C:\course_files\2026_autumn\
 | exp9.zip | exp9 | forward 优化 | n1~n20 | prj2/exp9 | 三阶段版 PASS（639855 ns）；bit 2026-09-15 重出；提交包 `patch/prj2_exp9_3_2024K8009929018.zip` |
 | exp10.zip | exp10 | 用户态运算指令 | n1~n36 | prj3/exp10 | ✅ 课程包 xsim 复验 n1~n36 PASS（2026-10-12，见 §十二）；超前版 bit 已出、未烧 |
 | exp11.zip | exp11 | 转移+访存指令 | n1~n46 | prj3/exp11 | ✅ 课程包 xsim 复验 n1~n46 PASS（2026-10-12）；超前版 bit 已出、未烧 |
-| exp12.zip | exp12 | syscall 例外（TEST4） | n1~n47 | prj4/exp12 | 课程包 2026-10-14 入库；超前版（官方包口径）n1~n47 PASS + bit，待按课程包复验（见 §十六） |
-| exp13.zip | exp13 | 更多例外（TEST5） | n1~n58 | prj4/exp13 | 同上；超前版 n1~n58 PASS + bit |
+| exp12.zip | exp12 | syscall 例外（TEST4） | n1~n47 | prj4/exp12 | ✅ 课程包 xsim 复验 n1~n47 PASS（2026-10-14，见 §十六）；超前版 bit 已出、未烧 |
+| exp13.zip | exp13 | 更多例外（TEST5） | n1~n58 | prj4/exp13 | ✅ 课程包 xsim 复验 n1~n58 PASS（2026-10-14；修复 ECFG bit10 后重跑，见 §十六） |
 
 报告归属（课程 PPT 的 6 份报告清单，见 §九）：
 
