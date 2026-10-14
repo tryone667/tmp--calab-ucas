@@ -22,7 +22,7 @@ index a815e71..c3f9ade 100644
      input  wire [31:0] alu_src2,
      output wire [31:0] alu_result
 diff --git a/myCPU/mycpu_top.v b/myCPU/mycpu_top.v
-index 6b1a106..e85c5cb 100644
+index 6b1a106..8552bb5 100644
 --- a/myCPU/mycpu_top.v
 +++ b/myCPU/mycpu_top.v
 @@ -1,13 +1,13 @@
@@ -512,17 +512,20 @@ index 6b1a106..e85c5cb 100644
  assign wb_result = wb_value;
  
  // debug info (WB stage)
-@@ -656,3 +670,91 @@ assign debug_wb_rf_wnum  = wb_dest;
+@@ -656,3 +670,100 @@ assign debug_wb_rf_wnum  = wb_dest;
  assign debug_wb_rf_wdata = wb_value;
  
  endmodule
 +
 +// ============================================================================
-+// divider : multi-cycle restoring divider for LA32R div.w / mod.w /
-+//           div.wu / mod.wu.  start is a one-cycle pulse; the unit then runs
-+//           32 steps with busy high; result is mod ? remainder : quotient,
-+//           quotient truncated toward zero and remainder taking the
-+//           dividend sign for the signed variants.
++// divider : multi-cycle divider for LA32R div.w / mod.w / div.wu / mod.wu.
++//   - start is a one-cycle pulse.  The trivial cases (divisor 0, dividend 0,
++//     dividend < divisor) finish in the accept cycle without stalling.
++//   - otherwise a restoring loop with the divisor aligned to the dividend MSB
++//     is used, so only the significant quotient bits are produced (typically
++//     far fewer than 32 iterations).
++//   - result is mod ? remainder : quotient, with quotient truncated toward
++//     zero and remainder taking the dividend sign for the signed variants.
 +// ============================================================================
 +module divider(
 +    input  wire        clk,
@@ -541,19 +544,30 @@ index 6b1a106..e85c5cb 100644
 +reg         mod_r;
 +reg         q_neg;
 +reg         r_neg;
-+reg  [63:0] acc;
-+reg  [31:0] babs;
-+reg  [ 4:0] step;
-+reg  [31:0] quot;
-+reg  [31:0] rem;
++reg  [31:0] rem;      // running remainder (magnitude)
++reg  [31:0] dal;      // divisor, aligned to the dividend MSB
++reg  [31:0] qbit;     // one-hot position of the quotient bit under test
++reg  [31:0] quot;     // quotient (magnitude)
 +
 +assign busy   = busy_r;
-+assign result = mod_r ? rem : quot;
++assign result = mod_r ? (r_neg ? (~rem  + 32'd1) : rem)
++                      : (q_neg ? (~quot + 32'd1) : quot);
 +
-+wire [31:0] rem_n = {acc[62:32], acc[31]};
-+wire [31:0] q_n   = {acc[30: 0], 1'b0};
-+wire        ge    = (babs != 32'd0) && (rem_n >= babs);
-+wire [63:0] acc_n = ge ? {rem_n - babs, q_n | 32'd1} : {rem_n, q_n};
++// ---- operands as magnitudes, plus a leading-zero count ---------------------
++function [5:0] clz32;
++    input [31:0] x;
++    integer i;
++    begin
++        clz32 = 6'd32;
++        for (i = 31; i >= 0; i = i - 1)
++            if (x[i] && clz32 == 6'd32) clz32 = 6'd31 - i;
++    end
++endfunction
++
++wire [31:0] a_mag = unsign ? a : (a[31] ? (~a + 32'd1) : a);
++wire [31:0] b_mag = unsign ? b : (b[31] ? (~b + 32'd1) : b);
++wire        fast  = (b_mag == 32'd0) || (a_mag == 32'd0) || (a_mag < b_mag);
++wire [5:0]  shift = clz32(b_mag) - clz32(a_mag);   // used only when !fast
 +
 +always @(posedge clk) begin
 +    if (reset) begin
@@ -562,43 +576,38 @@ index 6b1a106..e85c5cb 100644
 +        mod_r    <= 1'b0;
 +        q_neg    <= 1'b0;
 +        r_neg    <= 1'b0;
-+        acc      <= 64'b0;
-+        babs     <= 32'b0;
-+        step     <= 5'd0;
-+        quot     <= 32'b0;
 +        rem      <= 32'b0;
++        dal      <= 32'b0;
++        qbit     <= 32'b0;
++        quot     <= 32'b0;
 +    end
 +    else if (start) begin
-+        busy_r   <= 1'b1;
 +        unsign_r <= unsign;
 +        mod_r    <= mod;
 +        q_neg    <= ~unsign && (a[31] ^ b[31]);
 +        r_neg    <= ~unsign &&  a[31];
-+        step     <= 5'd0;
-+        if (unsign) begin
-+            acc  <= {32'd0, a};
-+            babs <= b;
++        rem      <= a_mag;
++        quot     <= 32'b0;
++        if (fast) begin
++            busy_r <= 1'b0;
 +        end
 +        else begin
-+            acc  <= {32'd0, a[31] ? (~a + 32'd1) : a};
-+            babs <= b[31] ? (~b + 32'd1) : b;
++            busy_r <= 1'b1;
++            dal    <= b_mag << shift;
++            qbit   <= 32'd1 << shift;
 +        end
 +    end
 +    else if (busy_r) begin
-+        if (step == 5'd31) begin
++        if (rem >= dal) begin
++            rem  <= rem - dal;
++            quot <= quot | qbit;
++        end
++        if (qbit == 32'd1) begin
 +            busy_r <= 1'b0;
-+            if (unsign_r) begin
-+                quot <= acc_n[31: 0];
-+                rem  <= acc_n[63:32];
-+            end
-+            else begin
-+                quot <= q_neg ? (~acc_n[31: 0] + 32'd1) : acc_n[31: 0];
-+                rem  <= r_neg ? (~acc_n[63:32] + 32'd1) : acc_n[63:32];
-+            end
 +        end
 +        else begin
-+            step <= step + 1'b1;
-+            acc  <= acc_n;
++            dal  <= dal  >> 1;
++            qbit <= qbit >> 1;
 +        end
 +    end
 +end

@@ -37,7 +37,7 @@ C:\course_files\2026_autumn\
 | exp8.zip | exp8 | cancel 解 control hazard + 阻塞解 data hazard | n1~n20 | prj2/exp8 | 三阶段版 PASS（1349305 ns）；bit 2026-09-15 重出；提交包 `patch/prj2_exp8_3_2024K8009929018.zip`（2026-09-15 上板复验全 PASS） |
 | exp9.zip | exp9 | forward 优化 | n1~n20 | prj2/exp9 | 三阶段版 PASS（639855 ns）；bit 2026-09-15 重出；提交包 `patch/prj2_exp9_3_2024K8009929018.zip` |
 | exp10.zip | exp10 | 用户态运算指令 | n1~n36 | prj3/exp10 | ✅ 课程包 xsim 复验 n1~n36 PASS（2026-10-12，见 §十二）；超前版 bit 已出、未烧 |
-| exp11.zip | exp11 | 转移+访存指令 | n1~n46 | prj3/exp11 | ✅ 课程包 xsim 复验 n1~n46 PASS（2026-10-12）；超前版 bit 已出、未烧 |
+| exp11.zip | exp11 | 转移+访存指令 | n1~n46 | prj3/exp11 | ✅ 课程包复验 n1~n46 PASS（2026-10-12）；**2026-10-14 除法器优化版复验 PASS（1234675 ns，-13%，见 §十七）**；超前版 bit 已出、未烧 |
 | exp12.zip | exp12 | syscall 例外（TEST4） | n1~n47 | prj4/exp12 | ✅ 课程包 xsim 复验 n1~n47 PASS（2026-10-14，见 §十六）；超前版 bit 已出、未烧 |
 | exp13.zip | exp13 | 更多例外（TEST5） | n1~n58 | prj4/exp13 | ✅ 课程包 xsim 复验 n1~n58 PASS（2026-10-14；修复 ECFG bit10 后重跑，见 §十六） |
 
@@ -289,3 +289,10 @@ C:\course_files\2026_autumn\
 - **超前版记录（资料库 prj4）**：exp12 n1~n47 全 PASS（1438135 ns）、exp13 n1~n58 全 PASS（2041805 ns）；bit 已出（WNS+0.403/WHS+0.108、WNS+0.279/WHS+0.115），未上板。`prj4/logs/` 已留档 4 份运行/综合日志。
 - **复验结果（2026-10-14）**：已完成——超前版 `myCPU/` 拷入 `prj4/exp12`、`prj4/exp13`，课程包 testbench / gettrace / inst_ram.mif 同步进 `C:\vivado_prj\exp12`、`exp13`。**exp12 n1~n47 全 PASS（1424705 ns）**；**exp13 首跑在 n49 失败**：`csrwr $r12,0x4`（ECFG）旧值参考 0x1bff vs 实现 0x1fff——手册表 7-5 规定 **ECFG bit10 为保留位 R0（恒读 0）**，我们的写路径把它当普通位存了；修复（`ectl_w` 结果掩 `& 13'h1bff`）后 **n1~n58 全 PASS（2029595 ns）**。日志：`prj4/logs/exp12_xsim_run_20261014.log`、`prj4/logs/exp13_xsim_run_20261014.log`；失败版留档 `exp13_xsim_run_20261014_fail_ecfg_bit10.log`。
 - **待办**：课程包口径重出 bit（工程树已课程化，跑 `build_all.tcl`）；之后按批打包提交（exp12/13 增量 patch 待生成）。
+
+## 十七、2026-10-14 晚（二）：exp11 优化与 prj3/4 报告 Demo
+
+- **exp11 除法器优化（prj3）**：`divider` 重构——① 平凡快速路径（除数/被除数 0、`|被除数| < |除数|` 当拍完成、不停顿）；② 对齐迭代（除数左移对齐被除数最高位，只产生有效商位；平均迭代数 32 → 个位数，上界仍 32）。结构上移除 64 位 `acc` 与步进计数。
+- **复验**：课程包 xsim **n1~n46 全 PASS**；`$finish` **1419475 → 1234675 ns（约 -13%）**；日志 `prj3/logs/exp11_xsim_run_20261014_opt.log`（优化前版 `exp11_xsim_run_20261013_clean.log` 保留）。`exp10→exp11` 补丁已重制（25324 B）并闭环复验（逐字节一致）。
+- **报告 Demo（待优化）**：`reports/prj3/02_添加用户态指令设计专题_实验报告.md`（实践 10/11）、`reports/prj4/03_异常与中断设计专题_实验报告.md`（实践 12/13）——均标注「Demo v0：已跑通；报告待优化」；prj4 稿已含 ECFG 保留位（R0）bug 的完整定位/修复记录。
+- **待办**：① 报告打磨（补图、补调试案例、统一体例）；② 课程包口径 bit 重出（exp10/11/12/13）；③ exp12/13 增量 patch 生成。
