@@ -465,8 +465,8 @@ assign br_target = (inst_beq || inst_bne || inst_blt || inst_bge
 // ---- data hazard: stall while EX holds a result ID needs ----
 //  1) EX load (data not back yet)
 //  2) EX div/mod (multi-cycle, result valid only after it leaves EX)
-//     ex_alu_is_div / ex_alu_is_mod are the pipelined copies of the
-//     ID-time div/mod predicates (declared with the EX registers below).
+//     ex_alu_is_div is the pipelined copy of the ID-time div predicate
+//     id_alu_is_div (declared with the EX registers below).
 wire id_stall = if_valid && ex_valid && ex_gr_we && (ex_dest != 5'b0)
              && (ex_res_from_mem || ex_alu_is_div)
              && ( (id_uses_rj  && (ex_dest == rj))
