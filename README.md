@@ -21,7 +21,7 @@ C:\course_files\2026_autumn\
 ```
 
 > 注：`loongson/` 已于 2026-10-11 移出本工作区、迁至 `C:\course_files\loongson\`（与 ipdps27 同级），与本课程工作流无关。
-> 注：本目录即 git 仓库工作树（远端 `tryone667/tmp--calab-ucas`）：`git pull` 直接铺平更新；新机器 `git clone` 到任意目录即得工作区骨架（`课程发布包/` 等本地件按需自备）。
+> 注：本目录即 git 仓库工作树（远端 `tryone667/tmp--calab-ucas`）：`git pull` 直接铺平更新；新机器 `git clone` 到任意目录即得工作区骨架（`ref/` 等本地件按需自备）。
 
 `prj1/ prj2/` 内部：下分 `expNN/`；每个 exp 收录 `myCPU/`、`patch/`（部分带 `reading/`），日志集中在 `prjN/logs/`；实验里的课程包重内容（`func/ gettrace/ soc_verify/` 等）不入库，本地按课程发布包补齐。Vivado 工程与 bit 在 `C:\vivado_prj\expNN\`。
 
