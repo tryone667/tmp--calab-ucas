@@ -251,7 +251,7 @@ C:\course_files\2026_autumn\
   - ③ `alu_op` 从 22 位收窄到 **18 位 `[17:0]`**：删掉 ALU 内从不使用的 div/mod 四个 one-hot 位（助教所指 `alu[18]` 一类空置信号）；div/mod 改由单一判断 `id_alu_is_div` 表达。
   - ④ 去重复定义：删除 `id_is_divmod` 与 `ex_alu_is_div = |ex_alu_op[21:18]` 两处同义写法，改为单一定义 `id_alu_is_div` + 流水线寄存器 `ex_alu_is_div`；中途引入又未用的 `id_alu_is_mod` / `ex_alu_is_mod` 一并去除（mod 选择由 divider 内部完成）。
   - ⑤ 全量审计：对 `mycpu_top.v` / `alu.v` 做「定义了但未使用」扫描，无残留。
-  - **复验**：Vivado xsim 复跑 exp11，**n1~n46 全 PASS**，`$finish` = **1419475 ns，与改动前完全一致**（逐拍等价）；日志 `prj2/logs/exp11_xsim_run_20261013_clean.log`。改动量：alu.v +4/−4、mycpu_top.v +122/−83（721 → 760 行，净增即 divider 模块）。
+  - **复验**：Vivado xsim 复跑 exp11，**n1~n46 全 PASS**，`$finish` = **1419475 ns，与改动前完全一致**（逐拍等价）；日志 `prj2/logs/exp11_xsim_run_20261013_clean.log`。改动量：alu.v +4/−4、mycpu_top.v +122/−83（721 → 760 行，净增即 divider 模块；2026-10-14 另修正一处残留注释 +2/−2）。
 - **提交仓库**：exp11 清理后的 RTL、重制的 `exp10_to_exp11.patch` 与复验日志已同步推送（GitHub `tryone667/tmp--calab-ucas`；2026-10-14 起仓库即工作区根目录）。
 
 ## 十四、2026-10-13 助教反馈讨论记录（补充留档）

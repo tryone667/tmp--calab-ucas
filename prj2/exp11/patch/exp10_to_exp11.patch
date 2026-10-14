@@ -22,7 +22,7 @@ index a815e71..c3f9ade 100644
      input  wire [31:0] alu_src2,
      output wire [31:0] alu_result
 diff --git a/myCPU/mycpu_top.v b/myCPU/mycpu_top.v
-index 6b1a106..45c07d3 100644
+index 6b1a106..e85c5cb 100644
 --- a/myCPU/mycpu_top.v
 +++ b/myCPU/mycpu_top.v
 @@ -1,13 +1,13 @@
@@ -285,8 +285,8 @@ index 6b1a106..45c07d3 100644
  //  1) EX load (data not back yet)
  //  2) EX div/mod (multi-cycle, result valid only after it leaves EX)
 -wire ex_alu_is_div = |ex_alu_op[21:18];
-+//     ex_alu_is_div / ex_alu_is_mod are the pipelined copies of the
-+//     ID-time div/mod predicates (declared with the EX registers below).
++//     ex_alu_is_div is the pipelined copy of the ID-time div predicate
++//     id_alu_is_div (declared with the EX registers below).
  wire id_stall = if_valid && ex_valid && ex_gr_we && (ex_dest != 5'b0)
               && (ex_res_from_mem || ex_alu_is_div)
               && ( (id_uses_rj  && (ex_dest == rj))
