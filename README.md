@@ -1,6 +1,6 @@
 # 计算机体系结构研讨课 —— 工作区说明（当前状态）
 
-> 快照时间：2026-09-08（2026-10-12 增补 exp10/11 入库，见 §十二；2026-10-14 结构整理：本目录=仓库根、prj1/prj2 平铺、viz/ 独立线，见 §十五）。本文件为工作区唯一顶层说明文件；历史操作记录见 §五/§六。
+> 快照时间：2026-09-08（2026-10-12 增补 exp10/11 入库，见 §十二；2026-10-14 两轮结构整理：本目录=仓库根、prj1/prj2 平铺、viz/ 独立线、ref/ 收纳课程包与讲义，见 §十五）。本文件为工作区唯一顶层说明文件；历史操作记录见 §五/§六。
 > 口径（2026-10-12）：课程作业/仿真/验收/提交一律以**课程网站发布包**为准（`课程发布包/`）；官方 gitee 包与超前实验 exp12~20（尚未发布）已归档至 `C:\course_files\2026_autumn\资料库\`，平时不参与课程工作流；exp10/11 课程包已发布并入库（见 §十二）。
 > 实验推进约定：课程发布包 → 工作副本 `prj1/ prj2/`（下分 expN）→ 功能仿真（2026-09-15 起 Vivado xsim）→ Vivado 工程 `C:\vivado_prj\expNN`（英文路径，产出 bit）。
 
@@ -11,15 +11,11 @@ C:\course_files\2026_autumn\
 ├── 研讨-计算机体系结构\        ← 课程工作区 = git 仓库工作树（本文件；2026-10-14 起）
 │   ├── prj1/                  exp1（跑马灯）、exp6（单周期找错；exp6/ref_sc = 修正版基线）
 │   ├── prj2/                  exp7~exp11（流水线系列，下分 exp：myCPU / patch / reading）
-│   ├── viz/                   可视化线（verilog-viz 工具链 + datapath-preview 预览页）
+│   ├── viz/                   可视化线（verilog-viz + datapath-preview）
 │   ├── 实验报告/              报告要求 + 模板 + 专题报告 md/PDF + figures（见 §九）
-│   ├── 验收准备/              exp8 速查 + 数据通路图 PNG
-│   ├── 上板工具/              flash_board.sh/.tcl（见 §八）
 │   ├── tools/                 run_sim_cli.bat（xsim 一键脚本）
+│   ├── ref/                   课程发布包 + 课程讲义（本地参考，不入库；见 ref/README.md）
 │   ├── 提交物/                提交包存档（本地保留，不入库）
-│   ├── 课程发布包/            课程网站原件 zip（本地保留，不入库）
-│   ├── 课程讲义/              课程资料 PDF/视频（本地保留，不入库）
-│   ├── exp8_RTL设计说明.md     exp8 RTL 说明（模块拆解、端口、接线、流水线信号计算 + 源码附录）
 │   └── README.md              ← 本文件
 └── 资料库/                    归档区：官方实验包、prj3~7 超前实验、tmpfig、zip 历史副本（见其 README）
 ```
@@ -28,7 +24,6 @@ C:\course_files\2026_autumn\
 > 注：本目录即 git 仓库工作树（远端 `tryone667/tmp--calab-ucas`）：`git pull` 直接铺平更新；新机器 `git clone` 到任意目录即得工作区骨架（`课程发布包/` 等本地件按需自备）。
 
 `prj1/ prj2/` 内部：下分 `expNN/`；每个 exp 收录 `myCPU/`、`patch/`（部分带 `reading/`），日志集中在 `prjN/logs/`；实验里的课程包重内容（`func/ gettrace/ soc_verify/` 等）不入库，本地按课程发布包补齐。Vivado 工程与 bit 在 `C:\vivado_prj\expNN\`。
-`exp8_RTL设计说明.md`（根目录）：exp8 RTL 说明（模块拆解、端口、接线、流水线信号计算 + 完整源码附录）。
 
 ## 二、课程主线对照（课程网站口径）
 
@@ -82,7 +77,7 @@ C:\course_files\2026_autumn\
 |---|---|---|
 | 指令级仿真 | **Vivado xsim**（`xvlog` / `xelab` / `xsim`，或 GUI 的 Run Simulation） | 2026-09-15 起**只在 Vivado 里做仿真**（原 WSL iverilog 流程停用，仅作应急备用）；命令、判据与两个坑见 §4.2 第 3 步 |
 | 综合 / 实现 / 出 bit | `C:\Application\Xilinx\Vivado\2019.2`（器件 xc7a200tfbg676-1） | 工程放在 `C:\vivado_prj\expNN`（英文路径） |
-| 上板（JTAG 烧 bit） | `上板工具/flash_board.sh` | 用法见 §八 |
+| 上板（JTAG 烧 bit） | 脚本已删（2026-10-14），恢复/手动流程见 §八 | 用户不常用，按需恢复 |
 | 课件文本抽取 | `C:\course_files\_tools\extract_slides.py` | **全工作区通用，禁止另写抽取脚本**；说明见 `C:\course_files\_tools\README.md` |
 | 报告插图 | 手写 SVG（`实验报告/figures/`） | 浏览器 / Inkscape / draw.io 可直接编辑，不引入绘图框架 |
 | Python | 3.10.11（已装 PyMuPDF / python-pptx / pdfplumber / pypdf） | 抽取与校验用 |
@@ -124,7 +119,7 @@ C:\course_files\2026_autumn\
    ```
    产物：`...\project\loongson.runs\impl_1\soc_lite_top.bit`。判据：日志中综合/实现 0 Error、时序 WNS > 0。
    ⚠️ Vivado 工程里的 `myCPU` 副本比工作区多一行 `` `timescale ``（纯仿真指令，综合时无影响），代码其余部分逐字节等价；**以工作区为准**，别反向覆盖。
-5. **上板验证**：`bash 上板工具/flash_board.sh`。日志出现 `=== PROGRAM DONE ===`；板卡数码管停在 `0x14000014`、双绿灯亮 = n1~n20 全 PASS（详见 §八）。
+5. **上板验证**（按需；脚本与手动流程见 §八）：日志出现 `=== PROGRAM DONE ===`；板卡数码管停在 `0x14000014`、双绿灯亮 = n1~n20 全 PASS。
 6. **打包提交**（命名 `prjN_expM_箱子号_学号.zip`）：`myCPU/`（四文件）+ `patch/`（相对上一实验的 git 风格 unified diff，做法见 `课程讲义/A03_提交patch指导/`）+ `soc_lite_top.bit`。成品放 `提交物/`。
 7. **写报告**：复制 `实验报告/报告模板.md` 为 `实验报告/NN_<专题>_实验报告.md`，插图放 `实验报告/figures/`（详见 §九）。
 
@@ -132,7 +127,7 @@ C:\course_files\2026_autumn\
 
 - 清理仿真产物：`dump.vcd` 常有几百 MB，在 `soc_verify/soc_bram/testbench/project/` 下，跑 `make clean` 即可删除（下次 `make` 会重建）。
 - 看波形：`prj2/exp7_refactor/watch_wave.sh`（在 WSLg 里打开 GTKWave）。
-- 上板：`bash 上板工具/flash_board.sh` 或 `bash 上板工具/flash_board.sh "C:/.../其它.bit"`。
+- 上板：上板脚本已删（恢复说明见 §八）；需要时从 git 历史取回或走 Vivado GUI。
 
 ## 五、2026-09-08 重构归档记录
 
@@ -164,31 +159,14 @@ C:\course_files\2026_autumn\
 - 核验：zip 内 myCPU 四文件与 bit 均与 2026-09-08 13:45 烧板全 PASS（0x14000014 + 双绿，`prj2/logs/exp7_program_20260908.log`）所用文件 SHA256 逐字节一致。
 - 原 `C:\course_files\2026_autumn\exp7_acceptance\` 验收副本已删除（内容均为课程发布包/工作区派生件，无独有文件）；验收仿真日志转存 `prj2/logs/exp7_acceptance_sim.log`。
 
-## 八、上板脚本（flash_board.sh，2026-09-08 新增）
+## 八、上板（脚本已删除，按需恢复）
 
-位置：`上板工具/`（2026-09-10 由根目录移入，脚本自定位，用法不变），共两个脚本文件 + 一个日志：
-- `flash_board.sh`：入口脚本，Git Bash / WSL 均可直接 `bash 上板工具/flash_board.sh` 运行；
-- `flash_board.tcl`：烧录逻辑（连接 JTAG → 查找设备 → program_hw_devices），被脚本调用，可自行查看；
-- `flash_board.log`：每次运行的完整日志（自动覆盖）。
+本工作区自 2026-10-14 起**不再保留上板脚本**（用户不常用）。需要烧板时按下面恢复或手动执行：
 
-用法：
-```bash
-cd "C:\course_files\2026_autumn\研讨-计算机体系结构"
-bash 上板工具/flash_board.sh                  # 烧默认 exp7 bit
-bash 上板工具/flash_board.sh "C:/.../其它.bit" # 烧指定 bit（如同学的文件）
-```
-- 默认 bit：`C:\vivado_prj\exp7\soc_verify\soc_bram\run_vivado\project\loongson.runs\impl_1\soc_lite_top.bit`。
-- 工作流程（2026-09-15 起）：脚本在 Windows 临时目录生成一个纯 ASCII 的 `flash_board_run.bat`（内部 `call ...\settings64.bat` → `vivado -mode batch -source flash_board.tcl`，日志在 Windows 侧重定向），再用 `cmd.exe /c` 执行，结束后把日志回拷到 `上板工具/flash_board.log`；经 JTAG 把 bit 写入 FPGA（SRAM 配置，断电丢失）。
-- 2026-09-15 修复两个坑（旧版症状：脚本报 `FLASH FAILED`，但 `flash_board.log` 是 0 字节，看不到原因）：
-  1. `wslpath -w` 会把 `C:/...` 这种已是 Windows 风格的路径的**盘符冒号换成全角冒号**，cmd 因此找不到 `settings64.bat` → 改为脚本自己转换路径分隔符，保证盘符冒号是 ASCII；
-  2. WSL 下用 bash 重定向 Windows 进程的 stdout 会**把输出全丢掉** → 改为让 `.bat` 在 Windows 侧自己写日志。
-  修复版在 Git Bash 与 WSL 下都实测通过（`settings64.bat` 能加载、Vivado 能起来、日志完整；无板时报 `no JTAG target found` 属预期）。
-- WSL 偶发 `cmd.exe: cannot execute binary file: Exec format error`（Windows 互操作 binfmt 未注册）：`wsl --shutdown` 后重跑即可；或直接用 Git Bash 跑同一脚本。
-- 成功判定：日志出现 `=== PROGRAM DONE ===`；板子数码管停在 `0x14000014`、双绿亮 = n1~n20 全部 PASS。
-- 常见失败：板子未供电 / JTAG-USB 线未插 / Vivado GUI 的 Hardware Manager 正占用目标（先关掉 GUI 连接再跑）。
-- 2026-09-15 首烧 exp8 时遇到一次 `ERROR: [Labtoolstcl 44-494] There is no active target available ... may be locked by another hw_server`：为上一次 hw_server / cs_server 残留锁住 target（本次进程随后自行退出），等几秒或杀掉残留进程后重试即过；第二次一次成功（日志 `prj2/logs/exp8_program_20260915.log`）。
-- 手动等效（GUI）：Open Hardware Manager → Open target → Auto Connect → Program Device，选上述 bit 即可。
-
+- **取回历史脚本**（git 历史里还有）：`git show 6ed35e9:上板工具/flash_board.sh > flash_board.sh`、`git show 6ed35e9:上板工具/flash_board.tcl > flash_board.tcl`；放回任意目录后在 Git Bash / WSL 里 `bash flash_board.sh [bit路径]`（脚本自定位，默认烧 `C:\vivado_prj\exp7\soc_verify\soc_bram\run_vivado\project\loongson.runs\impl_1\soc_lite_top.bit`）。
+- **手动等效（GUI）**：Vivado → Open Hardware Manager → Open target → Auto Connect → Program Device，选 `impl_1\soc_lite_top.bit`。
+- **成功判据**：日志出现 `=== PROGRAM DONE ===`、`End of startup status: HIGH`；板卡数码管停在 `0x14000014`、双绿灯亮 = n1~n20 全 PASS。
+- **常见坑**：板未供电 / JTAG 线未插 / 目标被占用（关掉 Vivado GUI 连接，或清掉残留 `hw_server`、`cs_server` 进程后重试）。
 ## 九、实验报告（2026-09-10 新建）
 
 课程口径（`课程讲义/00_课程介绍ppt.pdf`）：**每个实验专题提交一份书面实验报告，全课程共 6 个专题；第 1 个专题个人独立完成，后 5 个专题分组完成**；实验任务主观分的判分依据包含实验报告撰写质量。体例要求见 `课程讲义/A01_实验报告撰写建议.pdf`：题目须标明是哪个实践专题、写明姓名学号、是文章不是幻灯片、**不放目录**、格式自定但全篇统一、图尽量用 visio / draw.io 等工具画。
@@ -295,7 +273,7 @@ bash 上板工具/flash_board.sh "C:/.../其它.bit" # 烧指定 bit（如同学
 - **工作区即仓库**：`C:\course_files\2026_autumn\研讨-计算机体系结构\` 自 2026-10-14 起就是 git 工作树（`.git` 在根目录）；以后各机器 **`git pull` 即直接铺平更新**，新机器 `git clone` 到任意目录即得工作区骨架（课程发布包等本地件按需自备）。远端不变：`tryone667/tmp--calab-ucas`。
 - **prj 平铺**：`prj3/` 取消，exp10/exp11 并入 `prj2/`（流水线系列 exp7~11 统一下分 exp）；每 exp 收录 `myCPU/` + `patch/`（部分带 `reading/`）；仿真/上板日志集中 `prj2/logs/`；exp6 基线归位 `prj1/exp6/ref_sc`（exp6→exp7 patch 的应用对象，原 `exp7/baseline_ref_sc`）。
 - **两条线**：`prj1/`、`prj2/` = 代码线；`viz/`（verilog-viz + datapath-preview）= 可视化线。viz 自包含，对代码只有单向、按需的低耦合（刷新预览时由 `datapath_gen.py` 重新生成），互不改写。
-- **删除（用户确认不再需要）**：`同学参考/`（含 给同学_exp7bit、给同学_exp8or9bit、exp7-2 参考等）与根目录 `给同学_exp8or9_提交包_20260929.zip`。
-- **本地保留但不入库**（见 `.gitignore`）：`课程发布包/`、`课程讲义/`、`提交物/`、各 exp 的 `func/ gettrace/ soc_verify/ module_verify/`（课程包重内容）、历史遗留目录（`prj1/exp6_wt_answer/`、`prj1/sim/`、`prj1/sim_exp1/`、`prj2/exp7_refactor/`）、`孙宇晨x邵艾伦_20261009/`（与本课无关的本地素材，未动）。
+- **删除（用户确认不再需要）**：`同学参考/`、根目录 `给同学_exp8or9_提交包_20260929.zip`（2026-10-13）；`上板工具/`、`验收准备/`、`exp8_RTL设计说明.md`（2026-10-14 追加，说明/验收类文件不再保留；上板流程见 §八，文件可从 git 历史找回）。
+- **本地保留但不入库**（见 `.gitignore`）：`ref/`（课程发布包 + 课程讲义，`ref/README.md` 除外）、`提交物/`、各 exp 的 `func/ gettrace/ soc_verify/ module_verify/`（课程包重内容）、历史遗留目录（`prj1/exp6_wt_answer/`、`prj1/sim/`、`prj1/sim_exp1/`、`prj2/exp7_refactor/`）。
 - **对应关系**：2026-10-14 之前文档里的 `prj3/exp10`、`prj3/exp11` 即现 `prj2/exp10`、`prj2/exp11`；`prj3/logs` 即现 `prj2/logs`；原独立仓库目录 `loongarch-cpu-labs/` 已并入工作区根（即本目录）。
 - **本次重构提交**：`6ed35e9`（远端 main）。
