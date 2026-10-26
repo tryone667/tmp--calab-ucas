@@ -39,7 +39,7 @@ C:\course_files\2026_autumn\
 | exp10.zip | exp10 | 用户态运算指令 | n1~n36 | prj3/exp10 | ✅ 课程包 xsim 复验 n1~n36 PASS（2026-10-12，见 §十二）；超前版 bit 已出、未烧 |
 | exp11.zip | exp11 | 转移+访存指令 | n1~n46 | prj3/exp11 | ✅ 课程包复验 n1~n46 PASS（2026-10-12）；**2026-10-14 除法器优化版复验 PASS（1234675 ns，-13%，见 §十七）**；超前版 bit 已出、未烧 |
 | exp12.zip | exp12 | syscall 例外（TEST4） | n1~n47 | prj4/exp12 | ✅ 课程包 xsim 复验 n1~n47 PASS（2026-10-14，见 §十六）；超前版 bit 已出、未烧 |
-| exp13.zip | exp13 | 更多例外（TEST5） | n1~n58 | prj4/exp13 | ✅ 课程包 xsim 复验 n1~n58 PASS（2026-10-14；修复 ECFG bit10 后重跑，见 §十六） |
+| exp13.zip | exp13 | 更多例外（TEST5） | n1~n58 | prj4/exp13 | ✅ 课程包 xsim 复验 n1~n58 PASS（2026-10-14；修复 ECFG bit10 后重跑，见 §十六）；**2026-10-26 bit 重出（WNS 0.081 ns）、提交包 `patch/prj4_exp13_3_2024K8009929018.zip`（见 §二十）** |
 
 报告归属（课程 PPT 的 6 份报告清单，见 §九）：
 
@@ -313,3 +313,10 @@ C:\course_files\2026_autumn\
 - 与 prj2 同一口径重排 `reports/prj3/02_添加用户态指令设计专题_实验报告.md`：去内部路径引用、压缩语言、统一编号与表格；PDF 换素色排版（主题不蓝；本报告无插图）。出 3 页 PDF：`reports/prj3/02_添加用户态指令设计专题_实验报告_林岳_2024K8009929018.pdf`。
 - 复核：乘法→8 个 DSP48E1（综合利用率报告核对）；`divider` 接口与 `prj3/exp11/myCPU/mycpu_top.v` 中实例化逐字一致；WNS +0.925 / +0.448 ns 取自超前版综合日志（课程包口径 bit 重出待办仍有效）。
 - **组内报告**：作者栏暂留林岳/学号占位，待小组名单确定后替换；`reports/prj3/README.md` 已同步状态。
+
+## 二十、2026-10-26：exp13 提交包与 bit 重出（10-27 验收）
+
+- **验收安排**：课程进度表第 9 周（2026-10-27，周二）检查实践任务 12、13 上板演示并总结评价；当前进度到 exp13（exp14 课程包尚未发布）。
+- **exp13 提交包**：`patch/prj4_exp13_3_2024K8009929018.zip`（结构同前：`prj4_3_2024K8009929018/{myCPU,patch,soc_lite_top.bit}`）；patch 为 `exp12→exp13`（15966 B，仅 `mycpu_top.v`，+166/−28），闭环复验逐字节一致。
+- **bit 重出**（课程包 RTL，含 ECFG bit10 修复）：综合/实现 0 Error，布线后 WNS 0.081 ns / TNS 0.000 / WHS 0.111 ns（约束满足，余量较紧）；日志 `prj4/logs/exp13_vivado_20261026.log`。
+- **exp12/13 验证**：exp12 n1~n47 PASS（1424705 ns）；exp13 n1~n58 PASS（2029595 ns）。

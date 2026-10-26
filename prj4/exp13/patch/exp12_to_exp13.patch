@@ -1,0 +1,329 @@
+diff --git a/myCPU/mycpu_top.v b/myCPU/mycpu_top.v
+index 9365edd..2f59293 100644
+--- a/myCPU/mycpu_top.v
++++ b/myCPU/mycpu_top.v
+@@ -1,11 +1,14 @@
+ // ============================================================================
+ // 5-stage pipeline CPU (preIF -> IF -> ID -> EX -> MEM -> WB)
+-// Experiment 12: support syscall exception on the exp11 core
+-// (CSR instructions csrrd/csrwr/csrxchg, syscall, ertn).
+-//  - CSR file (crmd/prmd/estat/era/eentry/badv) committed in ID
+-//  - syscall exception: PRMD<-CRMD, CRMD.PLV/IE<-0, ERA<-PC, Ecode<-0xb,
+-//    redirect to EENTRY; ertn restores CRMD from PRMD and jumps to ERA
+-//  - exception/ertn flush younger fetch stages like a taken branch
++// Experiment 13: exp12 core + break / INE / ADEF / ALE / timer & soft
++// interrupts / rdcnt.
++//  - exceptions (syscall/brk/INE/ADEF/ALE/INT) all raise in ID, commit
++//    PRMD<-CRMD, CRMD.PLV/IE<-0, ERA<-PC, Ecode<-<type>, Badv for
++//    ADEF/ALE, then redirect to EENTRY; ertn restores CRMD from PRMD
++//  - the faulting ID instruction is flushed (does not enter EX)
++//  - CSR file: crmd/prmd/ectl/estat/era/badv/eentry/tid/tcfg/tval/ticlr
++//  - tcfg/tval timer drives estat.IS11; rdcntl/rdcnth read a 64-bit
++//    free-running counter, rdcntid returns TID
+ // ============================================================================
+ module mycpu_top(
+     input  wire        clk,
+@@ -193,6 +196,9 @@ wire        inst_ertn;
+ wire        inst_csrrd;
+ wire        inst_csrwr;
+ wire        inst_csrxchg;
++wire        inst_brk;
++wire        inst_rdcntl;
++wire        inst_rdcnth;
+ 
+ wire        need_ui5;
+ wire        need_si12;
+@@ -296,11 +302,18 @@ assign inst_csrrd    = (if_inst[31:26] == 6'h01) && (if_inst[ 9: 5] == 5'h00);
+ assign inst_csrwr    = (if_inst[31:26] == 6'h01) && (if_inst[ 9: 5] == 5'h01);
+ assign inst_csrxchg  = (if_inst[31:26] == 6'h01) && (|if_inst[9:5])
+                      && (if_inst[ 9: 5] != 5'h01) && ~inst_ertn;
++// break (exp13): opcode 0x2a, code in bits[15:0] (tests use break 0)
++assign inst_brk     = (if_inst[31:16] == 16'h002a);
++// rdcntvl.w/rdcntid (rk=0x18): rd <- counter[31:0], rj <- TID
++// rdcntvh.w   (rk=0x19): rd <- counter[63:32], rj <- TID
++assign inst_rdcntl  = (if_inst[31:15] == 17'h0) && (if_inst[14:10] == 5'b11000);
++assign inst_rdcnth  = (if_inst[31:15] == 17'h0) && (if_inst[14:10] == 5'b11001);
+ 
+ assign alu_op[ 0] = inst_add_w | inst_addi_w | inst_ld_b | inst_ld_h | inst_ld_w
+                     | inst_ld_bu | inst_ld_hu | inst_st_b | inst_st_h | inst_st_w
+                     | inst_jirl | inst_bl | inst_pcaddu12i
+-                    | inst_csrrd | inst_csrwr | inst_csrxchg;
++                    | inst_csrrd | inst_csrwr | inst_csrxchg
++                    | inst_rdcntl | inst_rdcnth;
+ assign alu_op[ 1] = inst_sub_w;
+ assign alu_op[ 2] = inst_slt | inst_slti;
+ assign alu_op[ 3] = inst_sltu | inst_sltui;
+@@ -323,6 +336,22 @@ assign alu_op[19] = inst_mod_w;
+ assign alu_op[20] = inst_div_wu;
+ assign alu_op[21] = inst_mod_wu;
+ 
++// any instruction the core decodes as valid (used for INE detection)
++wire inst_any = |{inst_add_w,  inst_sub_w,  inst_slt,     inst_sltu,
++                  inst_nor,     inst_and,    inst_or,      inst_xor,
++                  inst_slli_w,  inst_srli_w, inst_srai_w,  inst_addi_w,
++                  inst_ld_b,    inst_ld_h,   inst_ld_w,    inst_ld_bu,
++                  inst_ld_hu,   inst_st_b,   inst_st_h,    inst_st_w,
++                  inst_jirl,    inst_b,      inst_bl,      inst_beq,
++                  inst_bne,     inst_blt,    inst_bge,     inst_bltu,
++                  inst_bgeu,    inst_lu12i_w,inst_pcaddu12i,
++                  inst_slti,    inst_sltui,  inst_andi,    inst_ori,
++                  inst_xori,    inst_sll_w,  inst_srl_w,   inst_sra_w,
++                  inst_mul_w,   inst_mulh_w, inst_mulh_wu, inst_div_w,
++                  inst_div_wu,  inst_mod_w,  inst_mod_wu,  inst_syscall,
++                  inst_ertn,    inst_csrrd,  inst_csrwr,   inst_csrxchg,
++                  inst_brk,     inst_rdcntl, inst_rdcnth};
++
+ assign id_ls_type = inst_st_b  ? 4'd1 :
+                     inst_st_h  ? 4'd2 :
+                     inst_st_w  ? 4'd3 :
+@@ -395,7 +424,8 @@ assign gr_we         = ~(inst_st_b | inst_st_h | inst_st_w
+                        | inst_blt | inst_bge | inst_bltu | inst_bgeu
+                        | inst_b | inst_syscall | inst_ertn);
+ assign mem_we        = inst_st_b | inst_st_h | inst_st_w;
+-assign dest          = dst_is_r1 ? 5'd1 : rd;
++assign dest          = (inst_rdcntl | inst_rdcnth) ? ((rd != 5'b0) ? rd : rj)
++                       : dst_is_r1 ? 5'd1 : rd;
+ 
+ // regfile read ports
+ wire [ 4:0] rf_raddr1;
+@@ -422,7 +452,8 @@ regfile u_regfile(
+ 
+ // whether the source register is actually used
+ wire id_uses_rj  = ~(inst_b | inst_bl | inst_lu12i_w | inst_pcaddu12i
+-                    | inst_syscall | inst_ertn | inst_csrrd | inst_csrwr);
++                    | inst_syscall | inst_ertn | inst_csrrd | inst_csrwr
++                    | inst_rdcntl | inst_rdcnth);
+ wire id_uses_rkd = inst_add_w | inst_sub_w | inst_slt | inst_sltu
+                  | inst_and | inst_or | inst_nor | inst_xor
+                  | inst_beq | inst_bne
+@@ -490,20 +521,27 @@ wire id_ready_go  = ~id_stall;
+ wire id_allowin   = !if_valid || (id_ready_go && ex_allowin);
+ wire id_to_ex_valid = if_valid && id_ready_go;
+ 
+-// ===================== CSR file & exceptions (exp12) ======================
++// ===================== CSR file & exceptions (exp13) ======================
+ // CSR bit layouts follow the reference (golden) CPU:
+ //   crmd : [1:0]=PLV [2]=IE [3]=DA [4]=PG [6:5]=DATF [8:7]=DATM
+ //   prmd : [1:0]=PPLV [2]=PIE
+ //   estat: [30:22]=EsubCode [21:16]=Ecode [15:13]=0 [12]=IS12 [11]=IS11
+ //          [10]=0 [9:8]=IS9/IS8 [7:0]=IS7..0, bit31 always 0
++//          only IS0/IS1 are writable by software (masked)
++//   ectl : [12:0]=LIE
+ //   era/badv: full 32-bit
+ //   eentry: stores bits[31:6], readback = {stored[31:6], 6'b0}
++//   tid(0x40)/tcfg(0x41)/tval(0x42)/ticlr(0x44, read 0)
+ reg [31:0] csr_crmd;
+ reg [31:0] csr_prmd;
+ reg [31:0] csr_estat;
+ reg [31:0] csr_era;
+ reg [31:0] csr_eentry;
+ reg [31:0] csr_badv;
++reg [31:0] csr_ectl;        // [12:0] LIE
++reg [31:0] csr_tid;
++reg [31:0] csr_tcfg;        // [0]=En [1]=Periodic [31:2]=InitVal
++reg [31:0] timer_tval;
+ 
+ wire [13:0] csr_addr    = if_inst[23:10];
+ wire        inst_csr_wr = inst_csrwr | inst_csrxchg;
+@@ -511,14 +549,45 @@ wire        inst_csr_wr = inst_csrwr | inst_csrxchg;
+ wire [31:0] csr_rdata =
+     (csr_addr == 14'h0 ) ? csr_crmd                      :
+     (csr_addr == 14'h1 ) ? csr_prmd                      :
++    (csr_addr == 14'h4 ) ? csr_ectl                      :
+     (csr_addr == 14'h5 ) ? csr_estat                     :
+     (csr_addr == 14'h6 ) ? csr_era                       :
+     (csr_addr == 14'h7 ) ? csr_badv                      :
+     (csr_addr == 14'hc ) ? {csr_eentry[31:6], 6'b0}      :
++    (csr_addr == 14'h40) ? csr_tid                       :
++    (csr_addr == 14'h41) ? csr_tcfg                      :
++    (csr_addr == 14'h42) ? timer_tval                    :
+                            32'b0                         ;
+ 
+-// ---- redirects: branch / syscall exception / ertn ----
+-wire id_excp_req = if_valid && inst_syscall;
++// ---- exp13 exception sources (ID stage, single in-order commit point) ----
++// interrupt mask vector (bit10 reserved, IS10 absent)
++wire [12:0] estat_is  = {csr_estat[12], csr_estat[11], 1'b0,
++                         csr_estat[9], csr_estat[8], csr_estat[7:0]};
++wire        int_pending = csr_crmd[2] && (|(csr_ectl[12:0] & estat_is));
++
++// ALE: unaligned data access (address computed in ID with forwarding)
++wire [31:0] id_mem_addr = id_rj_value + imm;
++wire        id_ale_cond = (inst_st_w | inst_ld_w)  ? (|id_mem_addr[1:0]) :
++                          (inst_st_h | inst_ld_h | inst_ld_hu) ? id_mem_addr[0] :
++                          1'b0;
++
++wire excp_int  = if_valid && int_pending && !inst_ertn;
++wire excp_adef = if_valid && !excp_int  && (|if_pc[1:0]);
++wire excp_ale  = if_valid && !excp_int  && !excp_adef
++              && id_ale_cond && !id_stall;
++wire excp_sys  = if_valid && !excp_int  && !excp_adef && !excp_ale && inst_syscall;
++wire excp_brk  = if_valid && !excp_int  && !excp_adef && !excp_ale && inst_brk;
++wire excp_ine  = if_valid && !excp_int  && !excp_adef && !excp_ale && !inst_any;
++
++wire id_excp_req = excp_int | excp_adef | excp_ale | excp_sys | excp_brk | excp_ine;
++
++wire [5:0] excp_ecode = excp_int  ? 6'd0  :   // INT
++                        excp_adef ? 6'd8  :   // ADEF
++                        excp_ale  ? 6'd9  :   // ALE
++                        excp_sys  ? 6'd11 :   // SYS
++                        excp_brk  ? 6'd12 :   // BRK
++                                     6'd13;   // INE
++
+ wire id_ertn_req = if_valid && inst_ertn;
+ wire id_redirect = br_taken | id_excp_req | id_ertn_req;
+ wire [31:0] redirect_target = id_excp_req ? {csr_eentry[31:6], 6'b0} :
+@@ -528,7 +597,9 @@ wire [31:0] redirect_target = id_excp_req ? {csr_eentry[31:6], 6'b0} :
+ // one-shot commits when the ID instruction actually advances into EX
+ wire excp_commit = id_excp_req && id_ready_go && ex_allowin;
+ wire ertn_commit = id_ertn_req && id_ready_go && ex_allowin;
+-wire csr_commit  = if_valid && inst_csr_wr && id_ready_go && ex_allowin;
++// an exception preempts the CSR write of the abandoned instruction
++wire csr_commit  = if_valid && inst_csr_wr && !id_excp_req
++                && id_ready_go && ex_allowin;
+ 
+ wire [31:0] csr_mask  = inst_csrwr ? 32'hffffffff : id_rj_value;
+ wire [31:0] csr_wdata = id_rkd_value;          // GPR[rd]
+@@ -542,8 +613,42 @@ wire [25:0] eentry_w  = (csr_eentry[31:6] & ~csr_mask[31:6])
+                       | (csr_wdata[31:6] & csr_mask[31:6]);
+ wire [31:0] badv_w    = (csr_badv & ~csr_mask)
+                       | (csr_wdata & csr_mask);
+-wire [7:0]  estat_lo_w= (csr_estat[7:0] & ~csr_mask[7:0])
+-                      | (csr_wdata[7:0] & csr_mask[7:0]);
++wire [12:0] ectl_w    = ((csr_ectl[12:0] & ~csr_mask[12:0])
++                      | (csr_wdata[12:0] & csr_mask[12:0])) & 13'h1bff;  // ECFG bit10 is reserved (R0): always reads 0, writes ignored
++wire [31:0] tid_w     = (csr_tid & ~csr_mask)
++                      | (csr_wdata & csr_mask);
++wire [31:0] tcfg_w    = (csr_tcfg & ~csr_mask)
++                      | (csr_wdata & csr_mask);
++// estat software writes only touch IS0/IS1 (masked)
++wire        new_is0   = csr_mask[0] ? csr_wdata[0] : csr_estat[0];
++wire        new_is1   = csr_mask[1] ? csr_wdata[1] : csr_estat[1];
++
++// ---- timer (tcfg En/Periodic/InitVal -> TimeVal countdown -> IS11) ----
++wire        tcfg_en     = csr_tcfg[0];
++wire        tcfg_period = csr_tcfg[1];
++wire [29:0] tcfg_init   = csr_tcfg[31:2];
++wire [31:0] tval_reload = {tcfg_init, 2'b0};
++wire [31:0] tval_next   = tcfg_en ? (timer_tval != 32'd0 ? timer_tval - 32'd1 :
++                          (tcfg_period ? tval_reload : timer_tval)) : timer_tval;
++wire        is11_no_wr  = tcfg_en
++                        ? ((timer_tval != 32'd0)
++                           ? ((timer_tval == 32'd1) || csr_estat[11])
++                           : csr_estat[11])
++                        : csr_estat[11];
++wire        tcfg_commit  = csr_commit && (csr_addr == 14'h41);
++wire        ticlr_commit = csr_commit && (csr_addr == 14'h44);
++wire        next_en      = tcfg_w[0];
++wire [29:0] next_init    = tcfg_w[31:2];
++wire        is11_on_wr   = next_en ? ((next_init == 30'd0) ? 1'b1 : is11_no_wr)
++                                   : is11_no_wr;
++wire [31:0] tval_on_wr   = next_en ? {next_init, 2'b0} : tval_next;
++
++// ---- 64-bit free-running counter for rdcntvl.w / rdcntvh.w ----
++reg [63:0] tcnt;
++always @(posedge clk) begin
++    if (reset) tcnt <= 64'b0;
++    else       tcnt <= tcnt + 64'd1;
++end
+ 
+ always @(posedge clk) begin
+     if (reset) begin
+@@ -553,6 +658,10 @@ always @(posedge clk) begin
+         csr_era    <= 32'h0;
+         csr_eentry <= 32'h0;
+         csr_badv   <= 32'h0;
++        csr_ectl   <= 32'h0;
++        csr_tid    <= 32'h0;
++        csr_tcfg   <= 32'h0;
++        timer_tval <= 32'h0;
+     end
+     else begin
+         // CSR register write (csrwr / csrxchg), committed in ID
+@@ -560,23 +669,48 @@ always @(posedge clk) begin
+             case (csr_addr)
+                 14'h0:  csr_crmd   <= {23'b0, crmd_w[8:0]};
+                 14'h1:  csr_prmd   <= {29'b0, prmd_w[2:0]};
+-                14'h5:  csr_estat  <= {csr_estat[31:8], estat_lo_w};
++                14'h4:  csr_ectl   <= {19'b0, ectl_w};
+                 14'h6:  csr_era    <= era_w;
+                 14'h7:  csr_badv   <= badv_w;
+                 14'hc:  csr_eentry <= {eentry_w[25:0], 6'b0};
+-                14'h44: begin      // ticlr: bit0 write clears timer IS11
+-                            if (csr_wdata[0] & csr_mask[0])
+-                                csr_estat[11] <= 1'b0;
+-                        end
++                14'h40: csr_tid    <= tid_w;
++                14'h41: csr_tcfg   <= tcfg_w;
+                 default: ;
+             endcase
+         end
+-        // exception entry (exp12: syscall, Ecode 0xb)
++        // estat IS0/IS1 software write
++        if (csr_commit && (csr_addr == 14'h5)) begin
++            csr_estat[1] <= new_is1;
++            csr_estat[0] <= new_is0;
++        end
++        // Ecode/EsubCode only change on exception entry
++        if (excp_commit) begin
++            csr_estat[31:16] <= {9'h0, excp_ecode};
++        end
++        // IS11: ticlr clear > tcfg write > free-running timer
++        if (ticlr_commit && csr_wdata[0] && csr_mask[0]) begin
++            csr_estat[11] <= 1'b0;
++        end
++        else if (tcfg_commit) begin
++            csr_estat[11] <= is11_on_wr;
++        end
++        else begin
++            csr_estat[11] <= is11_no_wr;
++        end
++        // TimeVal update (tcfg write reloads; otherwise countdown)
++        if (tcfg_commit) begin
++            timer_tval <= tval_on_wr;
++        end
++        else begin
++            timer_tval <= tval_next;
++        end
++        // exception entry: PRMD<-CRMD, CRMD.IE/PLV<-0, ERA<-PC, Ecode, Badv
+         if (excp_commit) begin
+-            csr_prmd   <= {29'b0, csr_crmd[2:0]};       // save IE/PLV
+-            csr_crmd   <= {23'b0, csr_crmd[8:3], 3'b0}; // PLV=0 IE=0
++            csr_prmd   <= {29'b0, csr_crmd[2:0]};
++            csr_crmd   <= {23'b0, csr_crmd[8:3], 3'b0};
+             csr_era    <= if_pc;
+-            csr_estat  <= {9'h0, 6'h0b, csr_estat[15:0]}; // Ecode=0xb
++            if (excp_ale)        csr_badv <= id_mem_addr;
++            else if (excp_adef)  csr_badv <= if_pc;
+         end
+         // exception return
+         if (ertn_commit) begin
+@@ -677,7 +811,7 @@ always @(posedge clk) begin
+         ex_valid <= 1'b0;
+     end
+     else if (ex_allowin) begin
+-        ex_valid <= id_to_ex_valid;
++        ex_valid <= id_to_ex_valid && !id_excp_req;  // exp13: flush excp instr
+     end
+ end
+ 
+@@ -693,12 +827,16 @@ always @(posedge clk) begin
+         ex_res_from_mem <= 1'b0;
+         ex_dest <= 5'b0;
+     end
+-    else if (id_to_ex_valid && ex_allowin) begin
++    else if (id_to_ex_valid && ex_allowin && !id_excp_req) begin
+         ex_pc <= if_pc;
+         ex_alu_op <= alu_op;
+-        ex_alu_src1 <= src1_is_pc ? if_pc :
++        // rdcntl/rdcnth: rd != 0 -> counter slice; rd == 0 (rdcntid) -> TID
++        ex_alu_src1 <= inst_rdcntl ? ((rd != 5'b0) ? tcnt[31: 0] : csr_tid) :
++                       inst_rdcnth ? ((rd != 5'b0) ? tcnt[63:32] : csr_tid) :
++                       src1_is_pc  ? if_pc :
+                        src1_is_csr ? csr_rdata : id_rj_value;
+-        ex_alu_src2 <= src2_is_imm ? imm :
++        ex_alu_src2 <= (inst_rdcntl | inst_rdcnth) ? 32'b0 :
++                       src2_is_imm ? imm :
+                        src1_is_csr ? 32'b0 : id_rkd_value;
+         ex_rkd_value <= id_rkd_value;
+         ex_gr_we <= gr_we;
