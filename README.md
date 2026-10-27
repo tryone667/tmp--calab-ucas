@@ -39,7 +39,7 @@ C:\course_files\2026_autumn\
 | exp10.zip | exp10 | 用户态运算指令 | n1~n36 | prj3/exp10 | ✅ 课程包 xsim 复验 n1~n36 PASS（2026-10-12，见 §十二）；超前版 bit 已出、未烧 |
 | exp11.zip | exp11 | 转移+访存指令 | n1~n46 | prj3/exp11 | ✅ 课程包复验 n1~n46 PASS（2026-10-12）；**2026-10-14 除法器优化版复验 PASS（1234675 ns，-13%，见 §十七）**；超前版 bit 已出、未烧 |
 | exp12.zip | exp12 | syscall 例外（TEST4） | n1~n47 | prj4/exp12 | ✅ 课程包 xsim 复验 n1~n47 PASS（2026-10-14，见 §十六）；超前版 bit 已出、未烧 |
-| exp13.zip | exp13 | 更多例外（TEST5） | n1~n58 | prj4/exp13 | ✅ 课程包 xsim 复验 n1~n58 PASS（2026-10-14；修复 ECFG bit10 后重跑，见 §十六）；**2026-10-26 bit 重出（WNS 0.081 ns）、提交包 `patch/prj4_exp13_3_2024K8009929018.zip`（见 §二十）** |
+| exp13.zip | exp13 | 更多例外（TEST5） | n1~n58 | prj4/exp13 | ✅ 课程包 xsim 复验 n1~n58 PASS（2026-10-14；修复 ECFG bit10 后重跑，见 §十六）；**2026-10-26 bit 重出（WNS 0.081 ns）、提交包 `patch/prj4_exp13_3.zip`（见 §二十）** |
 
 报告归属（课程 PPT 的 6 份报告清单，见 §九）：
 
@@ -124,7 +124,7 @@ C:\course_files\2026_autumn\
    产物：`...\project\loongson.runs\impl_1\soc_lite_top.bit`。判据：日志中综合/实现 0 Error、时序 WNS > 0。
    ⚠️ Vivado 工程里的 `myCPU` 副本比工作区多一行 `` `timescale ``（纯仿真指令，综合时无影响），代码其余部分逐字节等价；**以工作区为准**，别反向覆盖。
 5. **上板验证**（按需；脚本与手动流程见 §八）：日志出现 `=== PROGRAM DONE ===`；板卡数码管停在 `0x14000014`、双绿灯亮 = n1~n20 全 PASS。
-6. **打包提交**（命名 `prjN_expM_箱子号_学号.zip`）：`myCPU/`（四文件）+ `patch/`（相对上一实验的 git 风格 unified diff，做法见 `ref/课程讲义/A03_提交patch指导/`）+ `soc_lite_top.bit`。成品放 `patch/`（工作区根的提交归档目录）。
+6. **打包提交**（命名 `prjN_expM_箱子号.zip`；2026-10-27 起小组实验不再带学号，见 §二十一）：`myCPU/`（四文件）+ `patch/`（相对上一实验的 git 风格 unified diff，做法见 `ref/课程讲义/A03_提交patch指导/`）+ `soc_lite_top.bit`。成品放 `patch/`（工作区根的提交归档目录），包内顶层目录 `prjN_箱子号/`。
 7. **写报告**：复制 `reports/报告模板.md` 为 `reports/NN_<专题>_实验报告.md`，插图放 `reports/figures/`（详见 §九）。
 
 ### 4.3 常用命令与善后
@@ -317,6 +317,15 @@ C:\course_files\2026_autumn\
 ## 二十、2026-10-26：exp13 提交包与 bit 重出（10-27 验收）
 
 - **验收安排**：课程进度表第 9 周（2026-10-27，周二）检查实践任务 12、13 上板演示并总结评价；当前进度到 exp13（exp14 课程包尚未发布）。
-- **exp13 提交包**：`patch/prj4_exp13_3_2024K8009929018.zip`（结构同前：`prj4_3_2024K8009929018/{myCPU,patch,soc_lite_top.bit}`）；patch 为 `exp12→exp13`（15966 B，仅 `mycpu_top.v`，+166/−28），闭环复验逐字节一致。
+- **exp13 提交包**：`patch/prj4_exp13_3.zip`（结构同前：`prj4_3/{myCPU,patch,soc_lite_top.bit}`）；patch 为 `exp12→exp13`（15966 B，仅 `mycpu_top.v`，+166/−28），闭环复验逐字节一致。
 - **bit 重出**（课程包 RTL，含 ECFG bit10 修复）：综合/实现 0 Error，布线后 WNS 0.081 ns / TNS 0.000 / WHS 0.111 ns（约束满足，余量较紧）；日志 `prj4/logs/exp13_vivado_20261026.log`。
 - **exp12/13 验证**：exp12 n1~n47 PASS（1424705 ns）；exp13 n1~n58 PASS（2029595 ns）。
+
+## 二十一、2026-10-27：小组实验提交命名规则变更（去掉学号）
+
+- **规则**：从 2026-10-27 起，本课程实验均为**小组实验**，提交物命名不再带个人学号——把原来命名的最后一串学号删掉即可：
+  - 提交包：`prjN_expM_箱子号.zip`（原 `prjN_expM_箱子号_学号.zip`）
+  - 包内顶层目录：`prjN_箱子号/`（原 `prjN_箱子号_学号/`）
+  - patch 文件名本来就不含学号，保持不变（如 `mycpu_exp13_vs_exp12.patch`）
+- 历史提交包（exp7~exp12）保留原名不动；从 exp13 起按新规则命名——exp13 已重打包为 `patch/prj4_exp13_3.zip`（包内顶层 `prj4_3/`），旧名文件已删除。
+- 以后新建提交包、写报告、整理目录时，一律不再添加学号。
