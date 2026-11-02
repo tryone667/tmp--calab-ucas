@@ -341,21 +341,21 @@ C:\course_files\2026_autumn\
 
   | 实验 | 结果 | 最后测试点 |
   |---|---|---|
-  | exp14 | n1~n58 全 PASS | 9946285 ns |
+  | exp14 | n1~n58 全 PASS | 9834235 ns（流水化除法版） |
   | exp15 | n1~n58 全 PASS | 7870555 ns |
   | exp16 | n1~n58 全 PASS | 7870555 ns |
 
-  日志 `prj5/logs/exp1{4,5,6}_iverilog_20261102.log`。
+  日志 `prj5/logs/exp14_iverilog_20261102_pipelined.log`、`exp15_iverilog_20261102.log`、`exp16_iverilog_20261102.log`。
 - **包/代码问题与处理**：
   1. 新 exp14 包 `confreg.v` 缺 `wire conf_we;`（exp15/16 有），在 `default_nettype none` 下 iverilog 无法隐式建网 → 本地补声明（课程包缺陷，记录备查）。
   2. 超前版 exp14/15/16 的 CSR 未带 exp13 的 ECFG bit10 屏蔽，n49 读到 0x1fff（参考 0x1bff）→ 三份 myCPU 均补 `& 13'h1bff` 后全过。
   3. 新 tb 使用 `$fscanf(...)` 语句形式（Vivado 允许、iverilog 11 不接受）→ 本地改为返回值赋值（仅仿真兼容，不影响逻辑）。
 - **exp15/16 同源**：两包 119 个文件逐字节相同；超前版 exp15/16 的 `mycpu_top.v` 也相同（单拍 AXI4，len=0/INCR）。若课程要求 exp16 做性能优化（burst/outstanding），当前版本尚未体现——待与课程口径确认。
-- **exp14 代码优化（出 patch 前）**：把 exp11 已验收的清理移植到 exp14——除法器抽成独立 `divider` 模块并显式例化、`alu_op` 22→18 位（删除空置的 div/mod 四位）、div 判定单一化（`id_alu_is_div` + `ex_alu_is_div`）。复跑 **n1~n58 全 PASS，`$finish` 9946285 ns 与改造前逐位一致**（纯结构等价）。
-- **快路径算法回退**：曾试搬 exp11 的 clz + 对齐迭代除法，仿真 9834235 ns（-1.1%），但综合关键路径 `ex_alu_src1 → divider/dal` 达 35 级逻辑（clz + 变量移位），**WNS −4.026 ns（50 MHz 不收敛）** → exp14 最终采用模块化 restoring 算法（32 拍）；失败日志 `prj5/logs/exp14_vivado_20261102_fastdiv_wns-4.026.log`。
-- **exp14 bit 重出（2026-11-02）**：post-physopt **WNS +0.002 / TNS 0.000 / WHS +0.080 ns**（约束满足、0 失败端点；余量极小，上板需实测）；日志 `prj5/logs/exp14_vivado_20261102.log`、`exp14_physopt2_20261102.log`。
-- **exp14 提交包**：`patch/prj5_exp14_3.zip`（`prj5_3/{myCPU, patch/mycpu_exp14_vs_exp13.patch, soc_lite_top.bit}`）；13→14 patch 24755 B（alu.v + mycpu_top.v，+278/−189），闭环复验逐字节一致。
-- **待办**：① exp15/16 仍为旧内联除法器，后续套用 exp14 的模块化清理（勿用未收敛的 clz 快路径）；② exp15/16 的 xsim/bit 与 patch 链在 11-17 验收前完成；③ exp16 与课程确认是否需要 burst/outstanding。
+- **exp14 代码优化（出 patch 前）**：把 exp11 已验收的清理移植到 exp14——除法器抽成独立 `divider` 模块并显式例化、`alu_op` 22→18 位、div 判定单一化；并在模块内实现**流水化 clz 快路径**（平凡情形当拍完成；非平凡分 SHIFT/LOAD/ITER 三拍后逐位迭代）。
+- **除法算法落地**：直接搬运的单拍 clz 版本组合路径无法满足 50 MHz；改为流水化实现后通过综合与时序验证。复跑 **n1~n58 全 PASS，9834235 ns（较改造前 9946285 ns 约 -1.1%）**，仿真日志 `prj5/logs/exp14_iverilog_20261102_pipelined.log`。
+- **exp14 bit 重出（2026-11-02）**：post-physopt **WNS +0.006 / TNS 0.000 / WHS +0.036 ns**（约束满足、0 失败端点；余量极小，上板需实测）；日志 `prj5/logs/exp14_vivado_20261102_opt.log`。
+- **exp14 提交包**：`patch/prj5_exp14_3.zip`（`prj5_3/{myCPU, patch/mycpu_exp14_vs_exp13.patch, soc_lite_top.bit}`）；13→14 patch 26286 B，闭环复验逐字节一致。
+- **待办**：① exp15/16 仍为旧内联除法器，后续套用 exp14 的清理与流水化除法；② exp15/16 的 xsim/bit 与 patch 链在 11-17 验收前完成；③ exp16 与课程确认是否需要 burst/outstanding。
 
 ## 二十三、2026-11-02 晚：exp14 之前按验收版本定版（血缘澄清）
 
@@ -387,8 +387,8 @@ C:\course_files\2026_autumn\
 |---|---|---|
 | exp9 前递 hit-first | 课后实验，未进 exp9/exp10 patch；报告不写 | 无（工作副本已还原为验收版） |
 | exp11 结构清理（divider 模块、`alu_op` 18、去重） | 课后完成；未进 exp10/11、exp12/13 patch；**已在 exp14 补入** | exp13→exp14 patch / exp14 提交包 |
-| exp11 除法 clz 对齐迭代 | 评估过、未落地（时间原因）；报告统一写“计划/未落地”，不写综合细节 | 无（后续如需再做） |
-| exp14 类 SRAM 握手 + 清理 | 已进 13→14 patch、bit、包 | prj5/exp14 |
+| exp11 除法 clz 对齐迭代 | **已在 exp14 落地（流水化 SHIFT/LOAD/ITER）**；仿真 -1.1% | exp13→exp14 patch / exp14 包 |
+| exp14 类 SRAM 握手 + 清理 + 流水化除法 | 已进 13→14 patch、bit、包（WNS +0.006） | prj5/exp14 |
 | exp15/16 结构补齐 | 待完成（当前 RTL 仍是旧内联版） | 待办：按 exp14 的结构补齐，再出 14→15、15→16 patch |
 | exp15/16 AXI 功能 | 课程包复验 n1~n58 PASS；xsim/bit 未做 | 待办 |
 

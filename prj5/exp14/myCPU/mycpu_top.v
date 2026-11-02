@@ -979,11 +979,14 @@ assign debug_wb_rf_wdata = wb_value;
 endmodule
 
 // ---------------------------------------------------------------------------
-// Multi-cycle divider (restoring division, one quotient bit per cycle).
-// Pulse start; wait for busy to fall; sample result.  The earlier
-// clz + aligned-iteration variant was faster in simulation but its
-// variable-shift cone did not close timing at 50 MHz, so the simple
-// restoring loop is kept here (same cycle behaviour as the exp13 core).
+// Multi-cycle divider with a pipelined fast path.
+//   start -> [fast? result now] : latch magnitudes, sign flags
+//         -> SHIFT : clz(b)-clz(a)              (priority encoders only)
+//         -> LOAD  : dal = b<<shift, qbit=1<<shift
+//         -> ITER  : one quotient bit per cycle
+// Splitting clz and the variable shifter into separate cycles keeps the
+// combinational cone short enough for 50 MHz while still finishing most
+// divisions in a handful of cycles.
 // ---------------------------------------------------------------------------
 module divider(
     input  wire        clk,
@@ -997,65 +1000,117 @@ module divider(
     output wire [31:0] result
 );
 
+localparam [1:0] ST_SHIFT = 2'd1;
+localparam [1:0] ST_LOAD  = 2'd2;
+localparam [1:0] ST_ITER  = 2'd3;
+
 reg         busy_r;
+reg  [1:0]  state;
 reg         unsigned_r;
 reg         mod_r;
 reg         q_neg;
 reg         r_neg;
-reg  [63:0] acc;      // {remainder, quotient} during the iteration
-reg  [31:0] babs;     // |divisor|
-reg  [ 4:0] step;
+reg  [31:0] a_mag_r;
+reg  [31:0] b_mag_r;
+reg  [5:0]  shift_r;
+reg  [31:0] rem;
+reg  [31:0] dal;
+reg  [31:0] qbit;
+reg  [31:0] quot;
 reg  [31:0] q;
 reg  [31:0] r;
 
 assign busy   = busy_r;
 assign result = mod_r ? r : q;
 
-wire [31:0] rem_n = {acc[62:32], acc[31]};
-wire [31:0] quo_n = {acc[30: 0], 1'b0};
-wire        ge    = (babs != 32'd0) && (rem_n >= babs);
-wire [63:0] acc_n = ge ? {rem_n - babs, quo_n | 32'd1}
-                       : {rem_n, quo_n};
+function [5:0] clz32;
+    input [31:0] x;
+    integer i;
+    begin
+        clz32 = 6'd32;
+        for (i = 31; i >= 0; i = i - 1)
+            if (x[i] && clz32 == 6'd32) clz32 = 6'd31 - i;
+    end
+endfunction
+
+wire [31:0] a_mag = unsign ? a : (a[31] ? (~a + 32'd1) : a);
+wire [31:0] b_mag = unsign ? b : (b[31] ? (~b + 32'd1) : b);
+wire        fast  = (b_mag == 32'd0) || (a_mag == 32'd0) || (a_mag < b_mag);
+wire        q_neg_new = ~unsign && (a[31] ^ b[31]);
+wire        r_neg_new = ~unsign &&  a[31];
+
+wire        ge     = (rem >= dal);
+wire [31:0] rem_n  = ge ? (rem - dal) : rem;
+wire [31:0] quot_n = ge ? (quot | qbit) : quot;
 
 always @(posedge clk) begin
     if (reset) begin
         busy_r     <= 1'b0;
+        state      <= 2'd0;
         unsigned_r <= 1'b0;
         mod_r      <= 1'b0;
         q_neg      <= 1'b0;
         r_neg      <= 1'b0;
-        acc        <= 64'b0;
-        babs       <= 32'b0;
-        step       <= 5'd0;
+        a_mag_r    <= 32'b0;
+        b_mag_r    <= 32'b0;
+        shift_r    <= 6'd0;
+        rem        <= 32'b0;
+        dal        <= 32'b0;
+        qbit       <= 32'b0;
+        quot       <= 32'b0;
         q          <= 32'b0;
         r          <= 32'b0;
     end
     else if (start) begin
-        busy_r     <= 1'b1;
-        step       <= 5'd0;
         unsigned_r <= unsign;
         mod_r      <= mod;
-        q_neg      <= ~unsign && (a[31] ^ b[31]);
-        r_neg      <= ~unsign &&  a[31];
-        acc        <= {32'd0, (unsign || !a[31]) ? a : (~a + 32'd1)};
-        babs       <= (unsign || !b[31]) ? b : (~b + 32'd1);
-    end
-    else if (busy_r) begin
-        if (step == 5'd31) begin
-            busy_r <= 1'b0;
-            if (unsigned_r) begin
-                q <= acc_n[31: 0];
-                r <= acc_n[63:32];
-            end
-            else begin
-                q <= q_neg ? (~acc_n[31: 0] + 32'd1) : acc_n[31: 0];
-                r <= r_neg ? (~acc_n[63:32] + 32'd1) : acc_n[63:32];
-            end
+        q_neg      <= q_neg_new;
+        r_neg      <= r_neg_new;
+        a_mag_r    <= a_mag;
+        b_mag_r    <= b_mag;
+        rem        <= a_mag;
+        quot       <= 32'b0;
+        q          <= 32'b0;
+        r          <= r_neg_new ? (~a_mag + 32'd1) : a_mag;
+        if (fast) begin
+            busy_r <= 1'b0;          // result is valid next cycle
+            state  <= 2'd0;
         end
         else begin
-            step <= step + 1'b1;
-            acc  <= acc_n;
+            busy_r <= 1'b1;
+            state  <= ST_SHIFT;
         end
+    end
+    else begin
+        case (state)
+            ST_SHIFT: begin
+                shift_r <= clz32(b_mag_r) - clz32(a_mag_r);
+                state   <= ST_LOAD;
+            end
+            ST_LOAD: begin
+                dal   <= b_mag_r << shift_r;
+                qbit  <= 32'd1 << shift_r;
+                state <= ST_ITER;
+            end
+            ST_ITER: begin
+                rem  <= rem_n;
+                quot <= quot_n;
+                if (qbit == 32'd1) begin
+                    busy_r <= 1'b0;
+                    state  <= 2'd0;
+                    q <= q_neg ? (~quot_n + 32'd1) : quot_n;
+                    r <= r_neg ? (~rem_n  + 32'd1) : rem_n;
+                end
+                else begin
+                    dal  <= dal  >> 1;
+                    qbit <= qbit >> 1;
+                end
+            end
+            default: begin
+                busy_r <= 1'b0;
+                state  <= 2'd0;
+            end
+        endcase
     end
 end
 
