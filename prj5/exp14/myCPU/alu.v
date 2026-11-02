@@ -1,14 +1,14 @@
 // ============================================================================
-// ALU for LoongArch32R (course subset), exp10 extension
-// one-hot alu_op[21:0]:
+// ALU for LoongArch32R (course subset), exp10/exp11 extension
+// one-hot alu_op[17:0]:
 //   0 add  1 sub  2 slt  3 sltu  4 and  5 nor  6 or  7 xor
 //   8 slli.w  9 srli.w  10 srai.w  11 lu12i.w
 //   12 sll.w  13 srl.w  14 sra.w
 //   15 mul.w  16 mulh.w  17 mulh.wu
-//   18 div.w  19 mod.w  20 div.wu  21 mod.wu  (handled in EX, not here)
+// div/mod are not ALU operations - they run in the divider unit in EX.
 // ============================================================================
 module alu(
-    input  wire [21:0] alu_op,
+    input  wire [17:0] alu_op,
     input  wire [31:0] alu_src1,
     input  wire [31:0] alu_src2,
     output wire [31:0] alu_result

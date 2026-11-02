@@ -40,6 +40,9 @@ C:\course_files\2026_autumn\
 | exp11.zip | exp11 | 转移+访存指令 | n1~n46 | prj3/exp11 | ✅ 课程包复验 n1~n46 PASS（2026-10-12）；**2026-10-14 除法器优化版复验 PASS（1234675 ns，-13%，见 §十七）**；超前版 bit 已出、未烧 |
 | exp12.zip | exp12 | syscall 例外（TEST4） | n1~n47 | prj4/exp12 | ✅ 课程包 xsim 复验 n1~n47 PASS（2026-10-14，见 §十六）；超前版 bit 已出、未烧 |
 | exp13.zip | exp13 | 更多例外（TEST5） | n1~n58 | prj4/exp13 | ✅ 课程包 xsim 复验 n1~n58 PASS（2026-10-14；修复 ECFG bit10 后重跑，见 §十六）；**2026-10-26 bit 重出（WNS 0.081 ns）、提交包 `patch/prj4_exp13_3.zip`（见 §二十）** |
+| exp14.zip | exp14 | 类 SRAM 握手接口 | n1~n58 | prj5/exp14 | ✅ 课程包复验 n1~n58 PASS（2026-11-02，9946285 ns）；bit 重出（WNS +0.002）；提交包 `patch/prj5_exp14_3.zip`（见 §二十二） |
+| exp15.zip | exp15 | 类 SRAM→AXI4 转接桥 | n1~n58 | prj5/exp15 | ✅ 课程包 iverilog 复验 n1~n58 PASS（7870555 ns，2026-11-02）；xsim/bit 待做 |
+| exp16.zip | exp16 | AXI 接口（与 exp15 同包） | n1~n58 | prj5/exp16 | ✅ 课程包 iverilog 复验 n1~n58 PASS（7870555 ns）；与 exp15 包/RTL 相同，待确认口径 |
 
 报告归属（课程 PPT 的 6 份报告清单，见 §九）：
 
@@ -54,7 +57,7 @@ C:\course_files\2026_autumn\
 - 课程站包 = 按实验裁剪+修订版（myCPU 空起步、func 为课程修订测试集、gettrace 为课程参考核），与官方 gitee 同名 Lab 包**不完全相同**（验证框架共同文件逐字节一致，差异集中在 func/gettrace/myCPU）；验收/提交一律用课程站包。
 - 课程站包解压即 prj1/prj2 内工作目录的原始版；prj1/prj2 现为**已开工完成版**（myCPU 已填；exp10/11 于 2026-10-12 按课程包复验通过）；勿用 zip 重新解压覆盖已完成代码。
 - exp2~5 未在课程网站出现；官方 Lab01~04（官方版 exp1/6~9 等）原件在 `资料库\官方实验包\`。
-- exp10/11 课程包已于 2026-10-12 发布并入库（`ref/课程发布包/exp10.zip`、`exp11.zip`；工作副本 `prj3/exp10`、`prj3/exp11`）；**exp12/13 已于 2026-10-14 发布入库（见 §十六）**，exp14~20 尚未发布，其超前完成的工作副本仍归档 `资料库\prj3_7_超前实验_未发布\`。
+- exp10/11 课程包已于 2026-10-12 发布并入库（`ref/课程发布包/exp10.zip`、`exp11.zip`；工作副本 `prj3/exp10`、`prj3/exp11`）；**exp12/13 已于 2026-10-14 发布入库（见 §十六）**；**exp14/15/16 已于 2026-11-02 发布入库（见 §二十二）**；exp17~20 尚未发布，其超前完成的工作副本仍归档 `资料库\prj3_7_超前实验_未发布\`。
 
 ## 三、课程主线完成状态（截至 2026-10-12）
 
@@ -348,4 +351,8 @@ C:\course_files\2026_autumn\
   2. 超前版 exp14/15/16 的 CSR 未带 exp13 的 ECFG bit10 屏蔽，n49 读到 0x1fff（参考 0x1bff）→ 三份 myCPU 均补 `& 13'h1bff` 后全过。
   3. 新 tb 使用 `$fscanf(...)` 语句形式（Vivado 允许、iverilog 11 不接受）→ 本地改为返回值赋值（仅仿真兼容，不影响逻辑）。
 - **exp15/16 同源**：两包 119 个文件逐字节相同；超前版 exp15/16 的 `mycpu_top.v` 也相同（单拍 AXI4，len=0/INCR）。若课程要求 exp16 做性能优化（burst/outstanding），当前版本尚未体现——待与课程口径确认。
-- **待办**：① 同步 `C:\vivado_prj\exp14~16` 课程包框架并跑 xsim/出 bit（目前为 iverilog 复验）；② 生成 13→14→15→16 增量 patch 与提交包。
+- **exp14 代码优化（出 patch 前）**：把 exp11 已验收的清理移植到 exp14——除法器抽成独立 `divider` 模块并显式例化、`alu_op` 22→18 位（删除空置的 div/mod 四位）、div 判定单一化（`id_alu_is_div` + `ex_alu_is_div`）。复跑 **n1~n58 全 PASS，`$finish` 9946285 ns 与改造前逐位一致**（纯结构等价）。
+- **快路径算法回退**：曾试搬 exp11 的 clz + 对齐迭代除法，仿真 9834235 ns（-1.1%），但综合关键路径 `ex_alu_src1 → divider/dal` 达 35 级逻辑（clz + 变量移位），**WNS −4.026 ns（50 MHz 不收敛）** → exp14 最终采用模块化 restoring 算法（32 拍）；失败日志 `prj5/logs/exp14_vivado_20261102_fastdiv_wns-4.026.log`。
+- **exp14 bit 重出（2026-11-02）**：post-physopt **WNS +0.002 / TNS 0.000 / WHS +0.080 ns**（约束满足、0 失败端点；余量极小，上板需实测）；日志 `prj5/logs/exp14_vivado_20261102.log`、`exp14_physopt2_20261102.log`。
+- **exp14 提交包**：`patch/prj5_exp14_3.zip`（`prj5_3/{myCPU, patch/mycpu_exp14_vs_exp13.patch, soc_lite_top.bit}`）；13→14 patch 24755 B（alu.v + mycpu_top.v，+278/−189），闭环复验逐字节一致。
+- **待办**：① exp15/16 仍为旧内联除法器，后续套用 exp14 的模块化清理（勿用未收敛的 clz 快路径）；② exp15/16 的 xsim/bit 与 patch 链在 11-17 验收前完成；③ exp16 与课程确认是否需要 burst/outstanding。

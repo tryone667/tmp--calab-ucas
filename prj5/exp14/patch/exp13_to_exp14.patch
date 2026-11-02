@@ -1,0 +1,625 @@
+diff --git a/myCPU/alu.v b/myCPU/alu.v
+index a815e71..c3f9ade 100644
+--- a/myCPU/alu.v
++++ b/myCPU/alu.v
+@@ -1,14 +1,14 @@
+ // ============================================================================
+-// ALU for LoongArch32R (course subset), exp10 extension
+-// one-hot alu_op[21:0]:
++// ALU for LoongArch32R (course subset), exp10/exp11 extension
++// one-hot alu_op[17:0]:
+ //   0 add  1 sub  2 slt  3 sltu  4 and  5 nor  6 or  7 xor
+ //   8 slli.w  9 srli.w  10 srai.w  11 lu12i.w
+ //   12 sll.w  13 srl.w  14 sra.w
+ //   15 mul.w  16 mulh.w  17 mulh.wu
+-//   18 div.w  19 mod.w  20 div.wu  21 mod.wu  (handled in EX, not here)
++// div/mod are not ALU operations - they run in the divider unit in EX.
+ // ============================================================================
+ module alu(
+-    input  wire [21:0] alu_op,
++    input  wire [17:0] alu_op,
+     input  wire [31:0] alu_src1,
+     input  wire [31:0] alu_src2,
+     output wire [31:0] alu_result
+diff --git a/myCPU/mycpu_top.v b/myCPU/mycpu_top.v
+index 2f59293..1fd0d96 100644
+--- a/myCPU/mycpu_top.v
++++ b/myCPU/mycpu_top.v
+@@ -1,29 +1,40 @@
+ // ============================================================================
+-// 5-stage pipeline CPU (preIF -> IF -> ID -> EX -> MEM -> WB)
+-// Experiment 13: exp12 core + break / INE / ADEF / ALE / timer & soft
+-// interrupts / rdcnt.
+-//  - exceptions (syscall/brk/INE/ADEF/ALE/INT) all raise in ID, commit
+-//    PRMD<-CRMD, CRMD.PLV/IE<-0, ERA<-PC, Ecode<-<type>, Badv for
+-//    ADEF/ALE, then redirect to EENTRY; ertn restores CRMD from PRMD
+-//  - the faulting ID instruction is flushed (does not enter EX)
+-//  - CSR file: crmd/prmd/ectl/estat/era/badv/eentry/tid/tcfg/tval/ticlr
+-//  - tcfg/tval timer drives estat.IS11; rdcntl/rdcnth read a 64-bit
+-//    free-running counter, rdcntid returns TID
++// 5-stage pipeline CPU (IF -> ID -> EX -> MEM -> WB) with SoC handshaking
++// SRAM interface (exp14: soc_hs_bram).  Same instruction set / exception /
++// CSR behaviour as the verified exp13 core; only the two memory ports are
++// replaced by request/addr_ok/data_ok transactions:
++//  - instruction fetch: serialized single-outstanding reads; completed words
++//    queue (depth 1) into the IF stage; redirects flush the queue and discard
++//    an in-flight (in-order) response when it finally arrives
++//  - data access: the memory instruction stays in EX until data_ok returns
++//    (read data captured in EX, carried through MEM), so only one data
++//    transaction can be outstanding and older memory ops always complete
++//    before younger ones issue
++//  - divider: standalone `divider` module (fast paths + aligned iteration),
++//    instantiated once in EX; div/mod results never enter the ALU cone
+ // ============================================================================
+ module mycpu_top(
+     input  wire        clk,
+     input  wire        resetn,
+-    // inst sram interface
+-    output wire        inst_sram_en,
+-    output wire [3:0]  inst_sram_we,
++    // inst sram handshake interface
++    output wire        inst_sram_req,
++    output wire        inst_sram_wr,
++    output wire [1:0]  inst_sram_size,
++    output wire [3:0]  inst_sram_wstrb,
+     output wire [31:0] inst_sram_addr,
+     output wire [31:0] inst_sram_wdata,
++    input  wire        inst_sram_addr_ok,
++    input  wire        inst_sram_data_ok,
+     input  wire [31:0] inst_sram_rdata,
+-    // data sram interface
+-    output wire        data_sram_en,
+-    output wire [3:0]  data_sram_we,
++    // data sram handshake interface
++    output wire        data_sram_req,
++    output wire        data_sram_wr,
++    output wire [1:0]  data_sram_size,
++    output wire [3:0]  data_sram_wstrb,
+     output wire [31:0] data_sram_addr,
+     output wire [31:0] data_sram_wdata,
++    input  wire        data_sram_addr_ok,
++    input  wire        data_sram_data_ok,
+     input  wire [31:0] data_sram_rdata,
+     // trace debug interface
+     output wire [31:0] debug_wb_pc,
+@@ -35,95 +46,98 @@ module mycpu_top(
+ reg reset;
+ always @(posedge clk) reset <= ~resetn;
+ 
+-// ============================ preIF fetch request ============================
+-reg         pre_if_valid;
+-reg  [31:0] pre_if_pc;
+-
+-wire pre_if_ready_go = 1'b1;
+-wire if_req_ready_go = 1'b1;
+-
+-wire if_req_allowin = !if_req_valid || (if_req_ready_go && if_allowin);
+-wire pre_if_allowin = !pre_if_valid || (pre_if_ready_go && if_req_allowin);
+-
+-always @(posedge clk) begin
+-    if (reset) begin
+-        pre_if_valid <= 1'b0;
+-    end
+-    else if (pre_if_allowin) begin
+-        pre_if_valid <= 1'b1;
+-    end
+-end
+-
+-always @(posedge clk) begin
+-    if (reset) begin
+-        pre_if_pc <= 32'h1bfffffc;  //trick: next fetch address after reset is 0x1c000000
+-    end
+-    else if (pre_if_allowin) begin
+-        if (id_redirect) pre_if_pc <= redirect_target;
+-        else             pre_if_pc <= pre_if_pc + 3'h4;
+-    end
+-end
+-
+-assign inst_sram_en    = pre_if_valid && pre_if_allowin;
+-assign inst_sram_we    = 4'b0000;
+-assign inst_sram_addr  = pre_if_pc;
+-assign inst_sram_wdata = 32'b0;
+-
+-// ====================== fetch-return (if_req) stage =======================
+-reg         if_req_valid;
++// ============ instruction fetch engine (SRAM handshake, in order) ===========
++// One request may be outstanding at a time.  A completed word is parked in
++// the (depth-1) if_req queue until the IF stage can accept it; npc holds the
++// address of the next word to fetch.  Redirects flush IF + queue; an already
++// accepted request cannot be cancelled, so its late response is discarded.
++reg         if_fetch_busy;     // request accepted, awaiting data_ok
++reg         if_fetch_discard;  // accepted request is on a flushed path
++reg  [31:0] if_fetch_pc;       // pc of the accepted request
++reg         if_req_valid;      // completed word waiting to enter IF
+ reg  [31:0] if_req_pc;
++reg  [31:0] if_req_inst;
++reg  [31:0] npc;
+ 
+-always @(posedge clk) begin
+-    if (reset) begin
+-        if_req_valid <= 1'b0;
+-    end
+-    else if (if_req_allowin) begin
+-        if_req_valid <= pre_if_valid && !id_redirect;
+-    end
+-end
+-
+-always @(posedge clk) begin
+-    if (reset) begin
+-        if_req_pc <= 32'h1bfffffc;
+-    end
+-    else if (if_req_allowin && pre_if_valid && !id_redirect) begin
+-        if_req_pc <= pre_if_pc;
+-    end
+-end
+-
+-// =============================== IF stage ================================
+ reg         if_valid;
+ reg  [31:0] if_pc;
+ reg  [31:0] if_inst;
+ 
+-wire if_ready_go = 1'b1;
+-wire if_allowin  = !if_valid || (if_ready_go && id_allowin);
+-wire if_req_to_if_valid = if_req_valid && !id_redirect;
+-
+-always @(posedge clk) begin
+-    if (reset) begin
+-        if_valid <= 1'b0;
+-    end
+-    else if (if_allowin) begin
+-        if_valid <= if_req_to_if_valid;
+-    end
+-end
+-
+-always @(posedge clk) begin
+-    if (reset) begin
+-        if_pc <= 32'h1bfffffc;
+-    end
+-    else if (if_allowin && if_req_to_if_valid) begin
+-        if_pc <= if_req_pc;
+-    end
+-end
++wire if_fetch_issue   = !reset && !if_fetch_busy && !if_req_valid && !id_redirect;
++wire if_fetch_accept  = if_fetch_issue && inst_sram_addr_ok;
++wire if_fetch_dataok  = if_fetch_busy && inst_sram_data_ok;
++// a redirect only takes effect when the redirecting instruction actually
++// advances out of the IF/ID stage (same gate as excp_commit/ertn_commit)
++wire redirect_flush   = id_redirect && id_ready_go && ex_allowin;
++
++wire if_ready_go   = 1'b1;
++wire if_allowin    = !if_valid || (if_ready_go && id_allowin);
++wire if_word_to_if = if_req_valid && !id_redirect;
++wire if_transfer   = if_word_to_if && if_allowin;
++
++assign inst_sram_req    = if_fetch_issue;
++assign inst_sram_wr     = 1'b0;
++assign inst_sram_size   = 2'b10;
++assign inst_sram_wstrb  = 4'b0000;
++assign inst_sram_addr   = npc;
++assign inst_sram_wdata  = 32'b0;
+ 
+ always @(posedge clk) begin
+     if (reset) begin
+-        if_inst <= 32'h0;
++        if_fetch_busy    <= 1'b0;
++        if_fetch_discard <= 1'b0;
++        if_fetch_pc      <= 32'h1c000000;
++        if_req_valid     <= 1'b0;
++        if_req_pc        <= 32'h1c000000;
++        if_req_inst      <= 32'b0;
++        npc              <= 32'h1c000000;
++        if_valid         <= 1'b0;
++        if_pc            <= 32'h1c000000;
++        if_inst          <= 32'b0;
+     end
+-    else if (if_allowin && if_req_to_if_valid) begin
+-        if_inst <= inst_sram_rdata;
++    else begin
++        // request accepted by the slave
++        if (if_fetch_accept) begin
++            if_fetch_busy    <= 1'b1;
++            if_fetch_pc      <= npc;
++            if_fetch_discard <= 1'b0;
++        end
++        // response returned (its queue write may be overridden below by a
++        // simultaneous redirect flush, which is the intended behaviour)
++        if (if_fetch_dataok) begin
++            if_fetch_busy <= 1'b0;
++            if (if_fetch_discard) begin
++                if_fetch_discard <= 1'b0;
++            end
++            else begin
++                if_req_valid <= 1'b1;
++                if_req_pc    <= if_fetch_pc;
++                if_req_inst  <= inst_sram_rdata;
++            end
++        end
++        // redirect commits: IF/queue hold only wrong-path instructions
++        if (redirect_flush) begin
++            if_valid         <= 1'b0;
++            if_req_valid     <= 1'b0;
++            if_fetch_discard <= if_fetch_busy && !if_fetch_dataok;
++            npc              <= redirect_target;
++        end
++        // IF behaves like a normal pipeline stage: whenever the current
++        // instruction is accepted downstream (if_allowin) it leaves IF and
++        // is replaced by the completed fetch word or a bubble -- the same
++        // word is never re-presented to ID while fetch is still waiting.
++        if (if_allowin) begin
++            if_valid <= if_word_to_if;
++            if (if_word_to_if) begin
++                if_pc   <= if_req_pc;
++                if_inst <= if_req_inst;
++            end
++        end
++        // completed word consumed by IF; next fetch address = pc + 4
++        if (if_transfer) begin
++            if_req_valid <= 1'b0;
++            npc          <= if_req_pc + 32'h4;
++        end
+     end
+ end
+ 
+@@ -208,7 +222,7 @@ wire        need_si20;
+ wire        need_si26;
+ wire        src2_is_4;
+ 
+-wire [21:0] alu_op;
++wire [17:0] alu_op;
+ wire        src1_is_pc;
+ wire        src2_is_imm;
+ wire        res_from_mem;
+@@ -331,10 +345,6 @@ assign alu_op[14] = inst_sra_w;
+ assign alu_op[15] = inst_mul_w;
+ assign alu_op[16] = inst_mulh_w;
+ assign alu_op[17] = inst_mulh_wu;
+-assign alu_op[18] = inst_div_w;
+-assign alu_op[19] = inst_mod_w;
+-assign alu_op[20] = inst_div_wu;
+-assign alu_op[21] = inst_mod_wu;
+ 
+ // any instruction the core decodes as valid (used for INE detection)
+ wire inst_any = |{inst_add_w,  inst_sub_w,  inst_slt,     inst_sltu,
+@@ -393,6 +403,7 @@ assign src_reg_is_rd = inst_beq | inst_bne | inst_blt | inst_bge
+ 
+ assign src1_is_pc    = inst_jirl | inst_bl | inst_pcaddu12i;
+ wire   src1_is_csr   = inst_csrrd | inst_csrwr | inst_csrxchg;
++wire   id_alu_is_div = inst_div_w | inst_div_wu | inst_mod_w | inst_mod_wu;
+ 
+ assign src2_is_imm   = inst_slli_w |
+                        inst_srli_w |
+@@ -511,7 +522,6 @@ assign br_target = (inst_beq || inst_bne || inst_blt || inst_bge
+ // ---- data hazard: stall while EX holds a result ID needs ----
+ //  1) EX load (data not back yet)
+ //  2) EX div/mod (multi-cycle, result valid only after it leaves EX)
+-wire ex_alu_is_div = |ex_alu_op[21:18];
+ wire id_stall = if_valid && ex_valid && ex_gr_we && (ex_dest != 5'b0)
+              && (ex_res_from_mem || ex_alu_is_div)
+              && ( (id_uses_rj  && (ex_dest == rj))
+@@ -614,7 +624,7 @@ wire [25:0] eentry_w  = (csr_eentry[31:6] & ~csr_mask[31:6])
+ wire [31:0] badv_w    = (csr_badv & ~csr_mask)
+                       | (csr_wdata & csr_mask);
+ wire [12:0] ectl_w    = ((csr_ectl[12:0] & ~csr_mask[12:0])
+-                      | (csr_wdata[12:0] & csr_mask[12:0])) & 13'h1bff;  // ECFG bit10 is reserved (R0): always reads 0, writes ignored
++                      | (csr_wdata[12:0] & csr_mask[12:0])) & 13'h1bff;  // ECFG bit10 is reserved (R0)
+ wire [31:0] tid_w     = (csr_tid & ~csr_mask)
+                       | (csr_wdata & csr_mask);
+ wire [31:0] tcfg_w    = (csr_tcfg & ~csr_mask)
+@@ -722,7 +732,7 @@ end
+ // =============================== EX stage ================================
+ reg         ex_valid;
+ reg  [31:0] ex_pc;
+-reg  [21:0] ex_alu_op;
++reg  [17:0] ex_alu_op;
+ reg  [31:0] ex_alu_src1;
+ reg  [31:0] ex_alu_src2;
+ reg  [31:0] ex_rkd_value;   // store data
+@@ -730,79 +740,82 @@ reg         ex_gr_we;
+ reg  [3:0]  ex_ls_type;     // load/store type
+ reg         ex_res_from_mem;
+ reg  [ 4:0] ex_dest;
++reg         ex_alu_is_div;  // instruction in EX is div/mod
++
++// ---- multi-cycle divider unit (div/mod instructions) ----
++wire        ex_div_start  = id_to_ex_valid && ex_allowin && id_alu_is_div;
++wire        ex_div_busy;
++wire [31:0] ex_div_result;
++
++divider u_divider(
++    .clk    (clk                       ),
++    .reset  (reset                     ),
++    .start  (ex_div_start              ),
++    .unsign (inst_div_wu | inst_mod_wu ),
++    .mod    (inst_mod_w  | inst_mod_wu ),
++    .a      (id_rj_value               ),
++    .b      (id_rkd_value              ),
++    .busy   (ex_div_busy               ),
++    .result (ex_div_result             )
++    );
+ 
+-// ---- multi-cycle divider state (div/mod instructions) ----
+-reg         ex_div_busy;
+-reg         ex_div_unsigned;
+-reg         ex_div_mod;
+-reg         ex_div_q_neg;
+-reg         ex_div_r_neg;
+-reg  [63:0] ex_div_acc;
+-reg  [31:0] ex_div_babs;
+-reg  [ 4:0] ex_div_step;
+-reg  [31:0] ex_div_q;
+-reg  [31:0] ex_div_r;
+-
+-wire id_is_divmod = inst_div_w | inst_mod_w | inst_div_wu | inst_mod_wu;
+-wire ex_accept_div = id_to_ex_valid && ex_allowin && id_is_divmod;
+-
+-wire [31:0] div_rem_n = {ex_div_acc[62:32], ex_div_acc[31]};
+-wire [31:0] div_q_n   = {ex_div_acc[30: 0], 1'b0};
+-wire        div_ge    = (ex_div_babs != 32'd0) && (div_rem_n >= ex_div_babs);
+-wire [63:0] div_acc_n = div_ge ? {div_rem_n - ex_div_babs, div_q_n | 32'd1}
+-                               : {div_rem_n, div_q_n};
++// ---- data memory transaction controller (SRAM handshake) ----
++// A memory instruction stays in EX until its transaction finishes:
++//   data_st[0] : request phase (req asserted, waiting for addr_ok)
++//   data_st[1] : data phase (waiting for data_ok)
++// data_done marks a completed access and lets the instruction leave EX.
++// Read data is captured in EX (ex_rd_word) and carried through MEM, so the
++// MEM stage never has to wait for the bus.
++reg        data_st;
++reg        data_done;
++reg [31:0] ex_rd_word;
++
++wire data_mem_op   = ex_valid && (ex_ls_type != 4'd0);
++wire data_is_load  = (ex_ls_type >= 4'd4) && (ex_ls_type <= 4'd8);
++wire data_is_wr    = (ex_ls_type >= 4'd1) && (ex_ls_type <= 4'd3);
++wire data_issue    = data_mem_op && !data_done;
++wire data_accept   = data_issue && (data_st == 1'b0) && data_sram_addr_ok;
++wire data_finish   = (data_st == 1'b1) && data_sram_data_ok;
++
++assign data_sram_req   = data_issue && !data_st;
++assign data_sram_wr    = data_is_wr;
++assign data_sram_size  = ((ex_ls_type == 4'd1) || (ex_ls_type == 4'd4) ||
++                          (ex_ls_type == 4'd7)) ? 2'd0 :
++                         ((ex_ls_type == 4'd2) || (ex_ls_type == 4'd5) ||
++                          (ex_ls_type == 4'd8)) ? 2'd1 : 2'd2;
++// memory access address: a dedicated adder, NOT ex_alu_result, so the
++// 32x32 multiplier/divider cones stay off the BRAM address path
++wire [31:0] mem_addr_n = ex_alu_src1 + ex_alu_src2;
++assign data_sram_wstrb = (ex_ls_type == 4'd1) ? (4'b0001 << mem_addr_n[1:0]) :
++                         (ex_ls_type == 4'd2) ? (4'b0011 << {mem_addr_n[1], 1'b0}) :
++                         (ex_ls_type == 4'd3) ? 4'b1111 : 4'b0000;
++assign data_sram_addr  = mem_addr_n;
++assign data_sram_wdata = (ex_ls_type == 4'd1) ? {4{ex_rkd_value[7:0]}} :
++                         (ex_ls_type == 4'd2) ? {2{ex_rkd_value[15:0]}} :
++                                                ex_rkd_value;
+ 
+ always @(posedge clk) begin
+     if (reset) begin
+-        ex_div_busy     <= 1'b0;
+-        ex_div_unsigned <= 1'b0;
+-        ex_div_mod      <= 1'b0;
+-        ex_div_q_neg    <= 1'b0;
+-        ex_div_r_neg    <= 1'b0;
+-        ex_div_acc      <= 64'b0;
+-        ex_div_babs     <= 32'b0;
+-        ex_div_step     <= 5'd0;
+-        ex_div_q        <= 32'b0;
+-        ex_div_r        <= 32'b0;
+-    end
+-    else if (ex_accept_div) begin
+-        ex_div_busy     <= 1'b1;
+-        ex_div_step     <= 5'd0;
+-        ex_div_unsigned <= inst_div_wu | inst_mod_wu;
+-        ex_div_mod      <= inst_mod_w | inst_mod_wu;
+-        ex_div_q_neg    <= inst_div_w && (id_rj_value[31] ^ id_rkd_value[31]);
+-        ex_div_r_neg    <= inst_mod_w && id_rj_value[31];
+-        if (inst_div_wu || inst_mod_wu) begin
+-            ex_div_acc  <= {32'd0, id_rj_value};
+-            ex_div_babs <= id_rkd_value;
+-        end
+-        else begin
+-            ex_div_acc  <= {32'd0, id_rj_value[31] ? (~id_rj_value + 32'd1) : id_rj_value};
+-            ex_div_babs <= id_rkd_value[31] ? (~id_rkd_value + 32'd1) : id_rkd_value;
+-        end
++        data_st    <= 1'b0;
++        data_done  <= 1'b0;
++        ex_rd_word <= 32'b0;
+     end
+-    else if (ex_div_busy) begin
+-        if (ex_div_step == 5'd31) begin
+-            ex_div_busy <= 1'b0;
+-            if (ex_div_unsigned) begin
+-                ex_div_q <= div_acc_n[31: 0];
+-                ex_div_r <= div_acc_n[63:32];
+-            end
+-            else begin
+-                ex_div_q <= ex_div_q_neg ? (~div_acc_n[31: 0] + 32'd1)
+-                                         : div_acc_n[31: 0];
+-                ex_div_r <= ex_div_r_neg ? (~div_acc_n[63:32] + 32'd1)
+-                                         : div_acc_n[63:32];
+-            end
+-        end
+-        else begin
+-            ex_div_step <= ex_div_step + 1'b1;
+-            ex_div_acc  <= div_acc_n;
++    else begin
++        // address accepted -> wait for the response
++        if (data_accept) data_st <= 1'b1;
++        // response returned: capture load data and release EX
++        if (data_finish) begin
++            data_st   <= 1'b0;
++            data_done <= 1'b1;
++            if (data_is_load) ex_rd_word <= data_sram_rdata;
+         end
++        // the instruction leaves EX (data_done cannot be set for a
++        // non-memory instruction, so this only fires for the same access)
++        if (ex_to_mem_valid && mem_allowin) data_done <= 1'b0;
+     end
+ end
+ 
+-wire ex_ready_go  = ~ex_div_busy;
++wire ex_ready_go  = ~ex_div_busy && ~(data_mem_op && ~data_done);
+ wire ex_allowin   = !ex_valid || (ex_ready_go && mem_allowin);
+ wire ex_to_mem_valid = ex_valid && ex_ready_go;
+ 
+@@ -818,7 +831,7 @@ end
+ always @(posedge clk) begin
+     if (reset) begin
+         ex_pc <= 32'b0;
+-        ex_alu_op <= 22'b0;
++        ex_alu_op <= 18'b0;
+         ex_alu_src1 <= 32'b0;
+         ex_alu_src2 <= 32'b0;
+         ex_rkd_value <= 32'b0;
+@@ -826,6 +839,7 @@ always @(posedge clk) begin
+         ex_ls_type <= 4'd0;
+         ex_res_from_mem <= 1'b0;
+         ex_dest <= 5'b0;
++        ex_alu_is_div <= 1'b0;
+     end
+     else if (id_to_ex_valid && ex_allowin && !id_excp_req) begin
+         ex_pc <= if_pc;
+@@ -843,6 +857,7 @@ always @(posedge clk) begin
+         ex_ls_type <= id_ls_type;
+         ex_res_from_mem <= res_from_mem;
+         ex_dest <= dest;
++        ex_alu_is_div <= id_alu_is_div;
+     end
+ end
+ 
+@@ -855,18 +870,7 @@ alu u_alu(
+     );
+ 
+ // div/mod result is produced by the multi-cycle divider in EX
+-assign ex_alu_result = ex_alu_is_div ? (ex_div_mod ? ex_div_r : ex_div_q)
+-                                     : ex_alu_result_raw;
+-
+-// memory request: issued during the EX stage, data returns in MEM stage
+-assign data_sram_en    = ex_valid && (ex_ls_type != 4'd0);
+-assign data_sram_we    = (ex_ls_type == 4'd1) ? (4'b0001 << ex_alu_result[1:0]) :
+-                         (ex_ls_type == 4'd2) ? (4'b0011 << {ex_alu_result[1], 1'b0}) :
+-                         (ex_ls_type == 4'd3) ? 4'b1111 : 4'b0000;
+-assign data_sram_addr  = ex_alu_result;
+-assign data_sram_wdata = (ex_ls_type == 4'd1) ? {4{ex_rkd_value[7:0]}} :
+-                         (ex_ls_type == 4'd2) ? {2{ex_rkd_value[15:0]}} :
+-                                                ex_rkd_value;
++assign ex_alu_result = ex_alu_is_div ? ex_div_result : ex_alu_result_raw;
+ 
+ // =============================== MEM stage ===============================
+ reg         mem_valid;
+@@ -876,6 +880,7 @@ reg         mem_gr_we;
+ reg  [3:0]  mem_ls_type;
+ reg         mem_res_from_mem;
+ reg  [ 4:0] mem_dest;
++reg  [31:0] mem_rd_word;
+ 
+ wire mem_ready_go = 1'b1;
+ wire mem_allowin  = !mem_valid || (mem_ready_go && wb_allowin);
+@@ -906,15 +911,16 @@ always @(posedge clk) begin
+         mem_ls_type <= ex_ls_type;
+         mem_res_from_mem <= ex_res_from_mem;
+         mem_dest <= ex_dest;
++        mem_rd_word <= (ex_ls_type >= 4'd4) ? ex_rd_word : mem_rd_word;
+     end
+ end
+ 
+-// load data selection (request was issued one cycle earlier in EX)
+-wire [31:0] mem_byte_shifted = data_sram_rdata >> {mem_alu_result[1:0], 3'b0};
+-wire [31:0] mem_half_val = mem_alu_result[1] ? data_sram_rdata[31:16]
+-                                             : data_sram_rdata[15:0];
++// load data selection (data word was captured in EX when data_ok returned)
++wire [31:0] mem_byte_shifted = mem_rd_word >> {mem_alu_result[1:0], 3'b0};
++wire [31:0] mem_half_val = mem_alu_result[1] ? mem_rd_word[31:16]
++                                             : mem_rd_word[15:0];
+ wire [31:0] mem_load_val =
+-    (mem_ls_type == 4'd6) ? data_sram_rdata :
++    (mem_ls_type == 4'd6) ? mem_rd_word :
+     (mem_ls_type == 4'd5) ? {{16{mem_half_val[15]}}, mem_half_val[15:0]} :
+     (mem_ls_type == 4'd8) ? {16'd0, mem_half_val[15:0]} :
+     (mem_ls_type == 4'd4) ? {{24{mem_byte_shifted[7]}}, mem_byte_shifted[7:0]} :
+@@ -971,3 +977,86 @@ assign debug_wb_rf_wnum  = wb_dest;
+ assign debug_wb_rf_wdata = wb_value;
+ 
+ endmodule
++
++// ---------------------------------------------------------------------------
++// Multi-cycle divider (restoring division, one quotient bit per cycle).
++// Pulse start; wait for busy to fall; sample result.  The earlier
++// clz + aligned-iteration variant was faster in simulation but its
++// variable-shift cone did not close timing at 50 MHz, so the simple
++// restoring loop is kept here (same cycle behaviour as the exp13 core).
++// ---------------------------------------------------------------------------
++module divider(
++    input  wire        clk,
++    input  wire        reset,
++    input  wire        start,
++    input  wire        unsign,
++    input  wire        mod,
++    input  wire [31:0] a,
++    input  wire [31:0] b,
++    output wire        busy,
++    output wire [31:0] result
++);
++
++reg         busy_r;
++reg         unsigned_r;
++reg         mod_r;
++reg         q_neg;
++reg         r_neg;
++reg  [63:0] acc;      // {remainder, quotient} during the iteration
++reg  [31:0] babs;     // |divisor|
++reg  [ 4:0] step;
++reg  [31:0] q;
++reg  [31:0] r;
++
++assign busy   = busy_r;
++assign result = mod_r ? r : q;
++
++wire [31:0] rem_n = {acc[62:32], acc[31]};
++wire [31:0] quo_n = {acc[30: 0], 1'b0};
++wire        ge    = (babs != 32'd0) && (rem_n >= babs);
++wire [63:0] acc_n = ge ? {rem_n - babs, quo_n | 32'd1}
++                       : {rem_n, quo_n};
++
++always @(posedge clk) begin
++    if (reset) begin
++        busy_r     <= 1'b0;
++        unsigned_r <= 1'b0;
++        mod_r      <= 1'b0;
++        q_neg      <= 1'b0;
++        r_neg      <= 1'b0;
++        acc        <= 64'b0;
++        babs       <= 32'b0;
++        step       <= 5'd0;
++        q          <= 32'b0;
++        r          <= 32'b0;
++    end
++    else if (start) begin
++        busy_r     <= 1'b1;
++        step       <= 5'd0;
++        unsigned_r <= unsign;
++        mod_r      <= mod;
++        q_neg      <= ~unsign && (a[31] ^ b[31]);
++        r_neg      <= ~unsign &&  a[31];
++        acc        <= {32'd0, (unsign || !a[31]) ? a : (~a + 32'd1)};
++        babs       <= (unsign || !b[31]) ? b : (~b + 32'd1);
++    end
++    else if (busy_r) begin
++        if (step == 5'd31) begin
++            busy_r <= 1'b0;
++            if (unsigned_r) begin
++                q <= acc_n[31: 0];
++                r <= acc_n[63:32];
++            end
++            else begin
++                q <= q_neg ? (~acc_n[31: 0] + 32'd1) : acc_n[31: 0];
++                r <= r_neg ? (~acc_n[63:32] + 32'd1) : acc_n[63:32];
++            end
++        end
++        else begin
++            step <= step + 1'b1;
++            acc  <= acc_n;
++        end
++    end
++end
++
++endmodule
