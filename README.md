@@ -281,7 +281,7 @@ C:\course_files\2026_autumn\
 - **删除（用户确认不再需要）**：`同学参考/`、根目录 `给同学_exp8or9_提交包_20260929.zip`（2026-10-13）；`上板工具/`、`验收准备/`、`exp8_RTL设计说明.md`（2026-10-14 追加，说明/验收类文件不再保留；上板流程见 §八，文件可从 git 历史找回）。
 - **本地保留但不入库**（见 `.gitignore`）：`ref/`（课程发布包 + 课程讲义，`ref/README.md` 除外）、`patch/`、各 exp 的 `func/ gettrace/ soc_verify/ module_verify/`（课程包重内容）、历史遗留目录（`prj1/exp6_wt_answer/`、`prj1/sim/`、`prj1/sim_exp1/`、`prj2/exp7_refactor/`）。
 - **对应关系**：批次正式口径 = `prj1=exp1/6、prj2=exp7/8/9、prj3=exp10/11、prj4=exp12/13`（10-14 早先曾把 exp10/11 并入 prj2，晚间已归位；以本口径为准）；原独立仓库目录 `loongarch-cpu-labs/` 已并入工作区根（即本目录）。
-- **补丁链（仓库内）**：`prj1/exp6/ref_sc` —`exp6_to_exp7`→ exp7 —`exp7_to_exp8`→ exp8 —`exp8_to_exp9`→ exp9 —`exp9_to_exp10`→ exp10 —`exp10_to_exp11`→ exp11；各段用 `git -c core.autocrlf=false apply -p1` 应用后与目标 RTL 逐字节一致（exp6→7→8→9 于 2026-09-29 复验；9→10 于 2026-10-13 生成复验；10→11 于 2026-10-14 重制复验）。
+- **补丁链（仓库内）**：`prj1/exp6/ref_sc` —`exp6_to_exp7`→ exp7 —`exp7_to_exp8`→ exp8 —`exp8_to_exp9`→ exp9 —（`mycpu_exp10_11_vs_exp9.patch`，exp10/11 合并提交、相对 exp9）→ exp11 —`exp11_to_exp12`→ exp12 —`exp12_to_exp13`→ exp13 —`exp13_to_exp14`→ exp14；exp10 仅为中间检查点（仓库内保留 `exp9_to_exp10.patch` 作记录，不属提交链）。
 - **本次重构提交**：`6ed35e9`（远端 main）。
 
 ## 十六、2026-10-14 晚：prj 批次修正与 exp12/13 课程包入库
@@ -356,3 +356,18 @@ C:\course_files\2026_autumn\
 - **exp14 bit 重出（2026-11-02）**：post-physopt **WNS +0.002 / TNS 0.000 / WHS +0.080 ns**（约束满足、0 失败端点；余量极小，上板需实测）；日志 `prj5/logs/exp14_vivado_20261102.log`、`exp14_physopt2_20261102.log`。
 - **exp14 提交包**：`patch/prj5_exp14_3.zip`（`prj5_3/{myCPU, patch/mycpu_exp14_vs_exp13.patch, soc_lite_top.bit}`）；13→14 patch 24755 B（alu.v + mycpu_top.v，+278/−189），闭环复验逐字节一致。
 - **待办**：① exp15/16 仍为旧内联除法器，后续套用 exp14 的模块化清理（勿用未收敛的 clz 快路径）；② exp15/16 的 xsim/bit 与 patch 链在 11-17 验收前完成；③ exp16 与课程确认是否需要 burst/outstanding。
+
+## 二十三、2026-11-02 晚：exp14 之前按验收版本定版（血缘澄清）
+
+- **定版原则**：exp14 之前（prj2/prj3/prj4）的 myCPU 与 patch 一律以**验收时提交的 zip** 为准，不再改动。
+- **恢复内容**：
+  - `prj2/exp9`：myCPU 与 `exp8_to_exp9.patch` 从 `patch/prj2_exp9_3_2024K8009929018.zip` 还原（撤掉 10-14 的 hit-first 课后实验）。
+  - `prj3/exp11`：myCPU 与提交 patch 从 `patch/prj3_exp10_11_3_2024K8009929018.zip` 还原（撤掉课后清理与 clz 实验）；提交 patch 名为 `mycpu_exp10_11_vs_exp9.patch`（**相对 exp9 的合并 patch**）。
+  - `prj2/exp7`、`prj2/exp8`、`prj3/exp10`、`prj4/exp12`、`prj4/exp13` 经哈希比对已与提交包一致，未动。
+- **真实提交链**：`exp6 → 7 → 8 → 9 →（exp10+11 合并 patch，相对 exp9）→ 12 → 13 →（13→14，含类 SRAM 接口 + 清理）→ 14`。`prj3/exp10` 只是中间检查点（n1~n36），没有单独的提交 patch。
+- **血缘说明（重要）**：
+  - exp12/13 的 RTL 来自 `资料库\prj3_7_超前实验_未发布\prj4` 的独立超前版（旧内联除法器），不是从 exp11 课后优化版继续做的；
+  - exp14 同样来自 `资料库\...\prj5` 的超前版，今天补了 ECFG 修复并把 exp11 的结构清理移植进来（于是 13→14 patch 里包含清理）；
+  - 因此“代码血缘”与“提交 patch 链”是两回事：patch 链连续，但每个实验最初都从各自的独立超前版起步。
+- **课后实验作废**：exp9 的 hit-first 前递优化、exp11 的清理+clz 除法，均未进入任何提交包；clz 综合不收敛（WNS −4.026），已放弃。
+- **报告待办**：prj2/prj3 报告里仍写有上述课后优化；按课程“报告改动需进入下一次 patch”的口径，需删减或标注（下一次 patch 已冻结）。待确认处理方式。
