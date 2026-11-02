@@ -389,8 +389,8 @@ C:\course_files\2026_autumn\
 | exp11 结构清理（divider 模块、`alu_op` 18、去重） | 课后完成；未进 exp10/11、exp12/13 patch；**已在 exp14 补入** | exp13→exp14 patch / exp14 提交包 |
 | exp11 除法 clz 对齐迭代 | 评估过、未落地（时间原因）；报告统一写“计划/未落地”，不写综合细节 | 无（后续如需再做） |
 | exp14 类 SRAM 握手 + 清理 | 已进 13→14 patch、bit、包 | prj5/exp14 |
-| exp15/16 清理 rebase | **未做**（当前 RTL 仍是旧内联版） | 待办：按 exp14 基线 rebase，再出 14→15、15→16 patch |
+| exp15/16 结构补齐 | 待完成（当前 RTL 仍是旧内联版） | 待办：按 exp14 的结构补齐，再出 14→15、15→16 patch |
 | exp15/16 AXI 功能 | 课程包复验 n1~n58 PASS；xsim/bit 未做 | 待办 |
 
-- **当前唯一硬缺口**：exp15/16 尚未 rebase 到 exp14 清理基线，也没有 patch/bit；其余缺口均已用报告口径说明或已在 exp14 闭合。
+- **当前待办**：exp15/16 的结构补齐与 patch/bit 尚未完成；其余事项均已用报告口径说明或已在 exp14 闭合。
 - exp10 没有单独 patch 是提交方式决定的（exp10/11 合并提交，patch 相对 exp9），不算缺口。
