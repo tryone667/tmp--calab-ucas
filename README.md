@@ -329,3 +329,23 @@ C:\course_files\2026_autumn\
   - patch 文件名本来就不含学号，保持不变（如 `mycpu_exp13_vs_exp12.patch`）
 - 历史提交包（exp7~exp12）保留原名不动；从 exp13 起按新规则命名——exp13 已重打包为 `patch/prj4_exp13_3.zip`（包内顶层 `prj4_3/`），旧名文件已删除。
 - 以后新建提交包、写报告、整理目录时，一律不再添加学号。
+
+## 二十二、2026-11-02：prj5（exp14/15/16）课程包入库与复验
+
+- **课程包入库**：`ref/课程发布包/exp14.zip`、`exp15.zip`、`exp16.zip`（SHA256：exp14 `A37638A5…DF0E62`、exp15 `B9990B31…C9E0D6`、exp16 `E868F31F…C44DB20`；**exp15 与 exp16 包内容逐字节相同**）。
+- **工作区**：按批次新建 `prj5/exp14~16`（myCPU + patch；func/gettrace/soc_verify 本地保留不入库）；myCPU 采用资料库超前版，并补上 exp13 的 ECFG bit10 修复（`& 13'h1bff`）。
+- **复验（iverilog 11，课程包新 func/gettrace/tb）**：
+
+  | 实验 | 结果 | 最后测试点 |
+  |---|---|---|
+  | exp14 | n1~n58 全 PASS | 9946285 ns |
+  | exp15 | n1~n58 全 PASS | 7870555 ns |
+  | exp16 | n1~n58 全 PASS | 7870555 ns |
+
+  日志 `prj5/logs/exp1{4,5,6}_iverilog_20261102.log`。
+- **包/代码问题与处理**：
+  1. 新 exp14 包 `confreg.v` 缺 `wire conf_we;`（exp15/16 有），在 `default_nettype none` 下 iverilog 无法隐式建网 → 本地补声明（课程包缺陷，记录备查）。
+  2. 超前版 exp14/15/16 的 CSR 未带 exp13 的 ECFG bit10 屏蔽，n49 读到 0x1fff（参考 0x1bff）→ 三份 myCPU 均补 `& 13'h1bff` 后全过。
+  3. 新 tb 使用 `$fscanf(...)` 语句形式（Vivado 允许、iverilog 11 不接受）→ 本地改为返回值赋值（仅仿真兼容，不影响逻辑）。
+- **exp15/16 同源**：两包 119 个文件逐字节相同；超前版 exp15/16 的 `mycpu_top.v` 也相同（单拍 AXI4，len=0/INCR）。若课程要求 exp16 做性能优化（burst/outstanding），当前版本尚未体现——待与课程口径确认。
+- **待办**：① 同步 `C:\vivado_prj\exp14~16` 课程包框架并跑 xsim/出 bit（目前为 iverilog 复验）；② 生成 13→14→15→16 增量 patch 与提交包。
