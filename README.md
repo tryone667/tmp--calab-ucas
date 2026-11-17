@@ -2,7 +2,8 @@
 
 > 快照时间：2026-09-08（2026-10-12 增补 exp10/11 入库，见 §十二；2026-10-14 两轮结构整理：本目录=仓库根、prj1/prj2 平铺、viz/ 独立线、ref/ 收纳课程包与讲义，见 §十五）。本文件为工作区唯一顶层说明文件；历史操作记录见 §五/§六。
 > 口径（2026-10-14）：课程作业/仿真/验收/提交一律以**课程网站发布包**为准（`ref/课程发布包/`）；官方 gitee 包与超前实验 exp14~20（尚未发布）已归档至 `C:\course_files\2026_autumn\资料库\`，平时不参与课程工作流；exp10/11（§十二）、exp12/13（§十六）课程包已发布并入库。
-> 实验推进约定：课程发布包 → 工作副本 `prj1/ prj2/`（下分 expN）→ 功能仿真（2026-09-15 起 Vivado xsim）→ Vivado 工程 `C:\vivado_prj\expNN`（英文路径，产出 bit）。
+> 实验推进约定：课程发布包 → 工作副本 `prj1/ prj2/`（下分 expN）→ 功能仿真（2026-09-15 起 Vivado xsim）→ Vivado 工程 `_vivado\expNN`（英文路径，产出 bit）。
+> 2026-11-17 迁移：Vivado 工程树从 C 盘根目录 `C:\vivado_prj` 整体迁到本目录下 `_vivado\`（本地-only、已进 `.gitignore` 不入库），此后文档/脚本里的 `_vivado\expNN` 即此路径；旧路径不再存在。
 
 ## 一、目录总览
 
@@ -25,7 +26,7 @@ C:\course_files\2026_autumn\
 > 注：`loongson/` 已于 2026-10-11 移出本工作区、迁至 `C:\course_files\loongson\`（与 ipdps27 同级），与本课程工作流无关。
 > 注：本目录即 git 仓库工作树（远端 `tryone667/tmp--calab-ucas`）：`git pull` 直接铺平更新；新机器 `git clone` 到任意目录即得工作区骨架（`ref/` 等本地件按需自备）。
 
-`prj1/ ~ prj4/` 内部：下分 `expNN/`；每个 exp 收录 `myCPU/`、`patch/`（部分带 `reading/`），日志集中在 `prjN/logs/`；实验里的课程包重内容（`func/ gettrace/ soc_verify/` 等）不入库，本地按课程发布包补齐。Vivado 工程与 bit 在 `C:\vivado_prj\expNN\`。
+`prj1/ ~ prj4/` 内部：下分 `expNN/`；每个 exp 收录 `myCPU/`、`patch/`（部分带 `reading/`），日志集中在 `prjN/logs/`；实验里的课程包重内容（`func/ gettrace/ soc_verify/` 等）不入库，本地按课程发布包补齐。Vivado 工程与 bit 在 `_vivado\expNN\`。
 
 ## 二、课程主线对照（课程网站口径）
 
@@ -61,14 +62,14 @@ C:\course_files\2026_autumn\
 
 ## 三、课程主线完成状态（截至 2026-10-12）
 
-| 实验 | 功能仿真 | Vivado bit（C:\vivado_prj\expN） | 上板 |
+| 实验 | 功能仿真 | Vivado bit（_vivado\expN） | 上板 |
 |---|---|---|---|
 | exp1 跑马灯 | PASS（prj1/logs/exp1_run.log） | scroller.bit | ✅ 已上板（17:02，单灯移位） |
 | exp6 单周期找错 | n1~n20 PASS（prj1/sim/sim_pass.log） | exp6_wt_answer/.../soc_lite_top.bit | ✅ 已上板（17:14，DDR3 SoC 全 PASS） |
 | exp7 流水（不考虑冒险） | n1~n20 PASS，2058995 ns（prj2/logs/exp7_run.log） | 2026-09-15 09:31 重出（WNS 3.922） | ✅ 2026-09-15 上板全 PASS（0x14000014 + 双绿；日志 prj2/logs/exp7_program_20260915.log）；2026-09-08 版亦曾全 PASS |
 | exp8 cancel+阻塞 | n1~n20 PASS，1349305 ns（prj2/logs/exp8_run.log） | 2026-09-15 09:25 重出（WNS 2.499） | ✅ 2026-09-15 13:15 上板全 PASS（0x14000014 + 双绿；日志 prj2/logs/exp8_program_20260915.log） |
 | exp9 forward | n1~n20 PASS，639855 ns（prj2/logs/exp9_run.log；2026-09-29 xsim 复跑同 PASS） | 2026-09-15 09:35 重出（WNS 2.112） | ✅ 2026-09-29 上板 PROGRAM DONE（prj2/logs/exp9_program_20260929.log） |
-| exp10 用户态运算 | ✅ **课程包复验** n1~n36 PASS（prj3/logs/exp10_xsim_run_20261012.log，2026-10-12；超前版 09-03 亦 PASS） | 超前版 bit 已出（C:\vivado_prj\exp10，WNS+0.925/WHS+0.077）；课程包口径 bit 待重出 | 未烧（板级未要求） |
+| exp10 用户态运算 | ✅ **课程包复验** n1~n36 PASS（prj3/logs/exp10_xsim_run_20261012.log，2026-10-12；超前版 09-03 亦 PASS） | 超前版 bit 已出（_vivado\exp10，WNS+0.925/WHS+0.077）；课程包口径 bit 待重出 | 未烧（板级未要求） |
 | exp11 转移+访存 | ✅ **课程包复验** n1~n46 PASS（prj3/logs/exp11_xsim_run_20261012.log，2026-10-12；超前版 09-03 亦 PASS）；**2026-10-13 验收通过并按助教意见清理后复跑同 PASS（1419475 ns，逐拍等价，见 §十三）** | 超前版 bit 已出（WNS+0.448/WHS+0.084）；课程包口径 bit 待重出 | 未烧 |
 
 - 仿真日志命名：2026-09-15 之前是 iverilog（`prj2/logs/expN_run.log`）；之后统一 Vivado xsim（`prj2/logs/expN_xsim_run.log`）。
@@ -83,7 +84,7 @@ C:\course_files\2026_autumn\
 | 用途 | 工具 / 路径 | 说明 |
 |---|---|---|
 | 指令级仿真 | **Vivado xsim**（`xvlog` / `xelab` / `xsim`，或 GUI 的 Run Simulation） | 2026-09-15 起**只在 Vivado 里做仿真**（原 WSL iverilog 流程停用，仅作应急备用）；命令、判据与两个坑见 §4.2 第 3 步 |
-| 综合 / 实现 / 出 bit | `C:\Application\Xilinx\Vivado\2019.2`（器件 xc7a200tfbg676-1） | 工程放在 `C:\vivado_prj\expNN`（英文路径） |
+| 综合 / 实现 / 出 bit | `C:\Application\Xilinx\Vivado\2019.2`（器件 xc7a200tfbg676-1） | 工程放在 `_vivado\expNN`（英文路径） |
 | 上板（JTAG 烧 bit） | 脚本已删（2026-10-14），恢复/手动流程见 §八 | 用户不常用，按需恢复 |
 | 课件文本抽取 | `C:\course_files\_tools\extract_slides.py` | **全工作区通用，禁止另写抽取脚本**；说明见 `C:\course_files\_tools\README.md` |
 | 报告插图 | 手写 SVG（`reports/figures/`） | 浏览器 / Inkscape / draw.io 可直接编辑，不引入绘图框架 |
@@ -101,17 +102,17 @@ C:\course_files\2026_autumn\
 3. **功能仿真（Vivado xsim —— 2026-09-15 起本课程唯一仿真流程，原 WSL iverilog 流程停用）**：
    一键跑（Windows 命令行，参数是实验号）：
    ```
-   C:\vivado_prj\expN\soc_verify\soc_bram\run_vivado\run_sim_cli.bat N
+   _vivado\expN\soc_verify\soc_bram\run_vivado\run_sim_cli.bat N
    ```
    脚本依次做：`xvlog --incr --relax …` 编译 → `xelab … --snapshot tb_top_sim tb_top glbl` 精化 → `xsim tb_top_sim -R` 跑到底；
    日志在 `…\project\loongson.sim\sim_1\behav\xsim_cli\simulate.log`。
-   GUI 入口：Vivado 打开 `C:\vivado_prj\expN\soc_verify\soc_bram\run_vivado\project\loongson.xpr` → Run Simulation；
+   GUI 入口：Vivado 打开 `_vivado\expN\soc_verify\soc_bram\run_vivado\project\loongson.xpr` → Run Simulation；
    自动生成的 `tb_top.tcl` 只跑了 `run 1000ns`，要接着在 Tcl 控制台 `restart` 后 `run -all`
    （**必须 restart**：否则前 1000 ns 带着旧状态继续，结果不作数）。
    判据：`----[1349305 ns] Number 8'd20 Functional Test Point PASS!!!` + `----PASS!!!`（exp8 实测；与 iverilog 历史结果一致，xsim elapsed 13 s、峰值内存 241 MB）。
    日志另存 `prj2/logs/expN_xsim_run.log`；tb 里 `$dumpvars` 会写出约 200 MB 的 `dump.vcd`（不要波形可删）。
    ⚠️ 三个坑：① `xvlog` 默认比工程模式严—— `mycpu_top.v` 有一处前向引用（`if_req_allowin` 用到还没声明的 `if_req_valid`），
-   必须带 `--relax`（工程模式自动带）；② 仿真前 `C:\vivado_prj\expN\` 必须有 `gettrace\golden_trace.txt`（及 `func\obj\*.mif`），
+   必须带 `--relax`（工程模式自动带）；② 仿真前 `_vivado\expN\` 必须有 `gettrace\golden_trace.txt`（及 `func\obj\*.mif`），
    **缺了 tb 打不开参考流会每周期刷 `$fscanf` 错**（2026-09-15 实测：20 秒写出 1.5 GB 日志）；exp8 的 `gettrace/` 已补进工程树。
    ③ **GUI 下 `$finish` 不收尾**：Vivado IDE 里 Run Simulation，测试全过、也打了 `$finish called at time : 1350285 ns`，
    但交互会话不退出，tb 的 `forever` 打印会一路刷 `Test is running`（实测刷到 46.5 ms 后卡死：日志最后一行是半截的 `debug_wb_p`、
@@ -119,9 +120,9 @@ C:\course_files\2026_autumn\
    （旧流程参考：WSL 里 `cd testbench && make`，或 `prj2/exp7_refactor/sim.sh`。）
 4. **同步进 Vivado 工程并出 bit**：
    ```bash
-   # 1) 把 prj2/expN/myCPU 四个文件复制到 C:\vivado_prj\expN\myCPU\
+   # 1) 把 prj2/expN/myCPU 四个文件复制到 _vivado\expN\myCPU\
    # 2) 构建
-   cd C:\vivado_prj\expN\soc_verify\soc_bram\run_vivado
+   cd _vivado\expN\soc_verify\soc_bram\run_vivado
    C:\Application\Xilinx\Vivado\2019.2\bin\vivado.bat -mode batch -source build_all.tcl
    ```
    产物：`...\project\loongson.runs\impl_1\soc_lite_top.bit`。判据：日志中综合/实现 0 Error、时序 WNS > 0。
@@ -149,11 +150,11 @@ C:\course_files\2026_autumn\
 | tmpfig/ | `资料库\tmpfig/` | 板卡照片与调试临时件归档 |
 
 - 文档同步：本 README 已按课程口径重写；旧全量版（含官方包对照与 exp10~20 完成表）存于 `资料库\研讨-计算机体系结构_README_20260904历史版.md`；资料库索引见 `资料库\README.md`。
-- 外部镜像未动：`C:\simw\expNN` 与 `C:\vivado_prj\expNN`（exp1~20）仍在原英文路径；课程主线仅 prj1/prj2 与之保持同步。
+- 外部镜像：`C:\simw\expNN` 仍在原英文路径（旧的 WSL iverilog 仿真镜像，2026-09-15 起停用，仅历史留档）；**Vivado 工程已于 2026-11-17 迁到本目录 `_vivado\expNN`**（原 `C:\vivado_prj` 已撤），课程主线仅 prj1/prj2 与之保持同步。
 
 ## 六、外部环境约定与历史记录
 
-- Vivado：`C:\Application\Xilinx\Vivado\2019.2`（xc7a200tfbg676-1）；仿真镜像 `C:\simw\expNN`；Vivado 工程与 bit `C:\vivado_prj\expNN`。
+- Vivado：`C:\Application\Xilinx\Vivado\2019.2`（xc7a200tfbg676-1）；仿真镜像 `C:\simw\expNN`；Vivado 工程与 bit `_vivado\expNN`。
 - 2026-09-02：exp1/exp6~9 全部完成综合+实现+bit，均已上板全 PASS（n1~n20，数码管 14000014 = 第 20 点）。
 - 2026-09-03~04：官方全套入库对照、exp10~20 超前完成（功能仿真全 PASS + bit），README 于 09-04 汇总重写（细节见历史版）。
 - 2026-09-08：确立“课程网站包为准”口径；官方包与超前内容归档 资料库；exp7 验收复跑 PASS（日志 `prj2/logs/exp7_acceptance_sim.log`）；验收专用副本目录已删除，提交包并入 `patch/`（见 §七）。
@@ -170,7 +171,7 @@ C:\course_files\2026_autumn\
 
 本工作区自 2026-10-14 起**不再保留上板脚本**（用户不常用）。需要烧板时按下面恢复或手动执行：
 
-- **取回历史脚本**（git 历史里还有）：`git show 6ed35e9:上板工具/flash_board.sh > flash_board.sh`、`git show 6ed35e9:上板工具/flash_board.tcl > flash_board.tcl`；放回任意目录后在 Git Bash / WSL 里 `bash flash_board.sh [bit路径]`（脚本自定位，默认烧 `C:\vivado_prj\exp7\soc_verify\soc_bram\run_vivado\project\loongson.runs\impl_1\soc_lite_top.bit`）。
+- **取回历史脚本**（git 历史里还有）：`git show 6ed35e9:上板工具/flash_board.sh > flash_board.sh`、`git show 6ed35e9:上板工具/flash_board.tcl > flash_board.tcl`；放回任意目录后在 Git Bash / WSL 里 `bash flash_board.sh [bit路径]`（脚本自定位，默认烧 `_vivado\exp7\soc_verify\soc_bram\run_vivado\project\loongson.runs\impl_1\soc_lite_top.bit`）。
 - **手动等效（GUI）**：Vivado → Open Hardware Manager → Open target → Auto Connect → Program Device，选 `impl_1\soc_lite_top.bit`。
 - **成功判据**：日志出现 `=== PROGRAM DONE ===`、`End of startup status: HIGH`；板卡数码管停在 `0x14000014`、双绿灯亮 = n1~n20 全 PASS。
 - **常见坑**：板未供电 / JTAG 线未插 / 目标被占用（关掉 Vivado GUI 连接，或清掉残留 `hw_server`、`cs_server` 进程后重试）。
@@ -222,15 +223,15 @@ C:\course_files\2026_autumn\
 - patch 链逐条验证过：在基线版本上 `git apply` 后与目标版本**逐字节一致**。注意本机 `core.autocrlf=true` 会把产出写成 CRLF 造成假阴性，校验要加 `-c core.autocrlf=false`。
 - 对照实验（证明三阶段不能合并）：`prj2/logs/exp7_on_exp8image_fail_20260915.log` —— exp7 的 RTL 放进 exp8 镜像，第 2077 ns 报 `Error!!!`。
 - 仿真日志：`prj2/logs/exp{7,8,9}_run.log`（重构后重跑；旧版留档 `*_20260902_fullver.log`）；构建日志 `prj2/logs/exp{7,8,9}_vivado_20260915.log`。
-- bit：三版均已重出（`C:\vivado_prj\exp{7,8,9}`，WNS 3.922 / 2.499 / 2.112 ns，时序全部收敛）；旧 bit 备份为 `soc_lite_top_20260908_backup.bit`（exp7）与 `soc_lite_top_20260902_backup.bit`（exp8 / exp9）。
+- bit：三版均已重出（`_vivado\exp{7,8,9}`，WNS 3.922 / 2.499 / 2.112 ns，时序全部收敛）；旧 bit 备份为 `soc_lite_top_20260908_backup.bit`（exp7）与 `soc_lite_top_20260902_backup.bit`（exp8 / exp9）。
 - 提交包：`patch/prj2_exp8_3_2024K8009929018.zip`、`patch/prj2_exp9_3_2024K8009929018.zip` 已按新 RTL 打包（结构同 exp7 包：myCPU/ + patch/ + soc_lite_top.bit，zip 条目用正斜杠），并各留一份解包核验目录（哈希逐文件核对一致）；exp7 旧包（09-08 的旧版 RTL + 旧 patch，与新 patch 链基线不一致）暂保留，是否重制见下条复盘。 2026-09-15 交件前把 patch 里的 `100755` 归一为 `100644`（消除 `git apply` 模式告警）并重打包复验：patch 应用后与目标 RTL 逐字节一致、bit 与工程一致；exp8 包 md5 `e36733b817aa`、exp9 包 md5 `e651374f7e5b`，原包备份在 `patch/backup_20260915/`。
-- 工程同步：`C:\vivado_prj\exp{7,9}\myCPU` 已换为新 RTL，旧文件保留 `.bak_20260908` / `.bak_20260902` 后缀。
+- 工程同步：`_vivado\exp{7,9}\myCPU` 已换为新 RTL，旧文件保留 `.bak_20260908` / `.bak_20260902` 后缀。
 - 旧包复盘（2026-09-15）：09-08 旧 exp7 包 patch 共 1030 行（+515/−486），其中已有 **24 处 `fwd_` 前递标记**——exp7 一版就把 exp9 的前递写完，这是 exp8 / exp9 patch 几乎为空的根因。检测法：数 patch 里关键机制标记的出现次数（新链为 exp6→exp7 `fwd_`=0、exp7→exp8 `fwd_`=0 且 `_hit`=6、exp8→exp9 才 `fwd_`=12）。旧 patch 对 exp6 基线 `git apply --check` 退出码 0，基线无问题，属“增量一口气写到底”。exp7 旧包保留不删；是否按新链重制，待与老师确认口径后定。
-- 仿真流程改口径（2026-09-15 晚，用户要求）：**以后仿真一律在 Vivado（xsim）里做**，WSL iverilog 流程停用（仅作应急）。改动：① 把 `gettrace/`（`golden_trace.txt`）补进 `C:\vivado_prj\exp8\`——工程树原来缺它，tb 打不开参考流会每周期刷 `$fscanf` 错（20 秒 1.5 GB 日志，已清）；② 新增 `run_sim_cli.bat`（`xvlog --incr --relax` → `xelab` → `xsim -R`，参数为实验号）。结果：xsim 全流程跑通 `----PASS!!!`（1349305 ns，与 iverilog 历史结果一致；elapsed 13 s，峰值内存 241 MB），日志 `prj2/logs/exp8_xsim_run.log`；GUI 入口为 Run Simulation（注意自动 tcl 只 `run 1000ns`，要 `restart` + `run -all`）。
+- 仿真流程改口径（2026-09-15 晚，用户要求）：**以后仿真一律在 Vivado（xsim）里做**，WSL iverilog 流程停用（仅作应急）。改动：① 把 `gettrace/`（`golden_trace.txt`）补进 `_vivado\exp8\`——工程树原来缺它，tb 打不开参考流会每周期刷 `$fscanf` 错（20 秒 1.5 GB 日志，已清）；② 新增 `run_sim_cli.bat`（`xvlog --incr --relax` → `xelab` → `xsim -R`，参数为实验号）。结果：xsim 全流程跑通 `----PASS!!!`（1349305 ns，与 iverilog 历史结果一致；elapsed 13 s，峰值内存 241 MB），日志 `prj2/logs/exp8_xsim_run.log`；GUI 入口为 Run Simulation（注意自动 tcl 只 `run 1000ns`，要 `restart` + `run -all`）。
 - 验收准备（2026-09-15 晚）：`验收准备/exp8_典型指令数据通路与冒险例子.md` —— 先对齐 RTL 命名（rj / rd / rk 字段、rf_raddr/rdata、各级寄存器与 valid / allowin 握手），再给 R 型 / I 型 / 分支跳转的逐级 datapath，最后是两个逐拍冒险例子（数据：add.w 撞车停 3 拍；控制：beq taken 作废两条 + 改道）；同目录 `任务8_五级流水线数据通路.png` 为彩色总图。另：原先的 `任务8_五级流水线与改动_验收准备.md` 按用户要求删除（不看的文档不留）。
 - GUI 仿真 `$finish` 不收尾（2026-09-15 晚实测）：Vivado IDE 里 Run Simulation（`xsim tb_top_behav -tclbatch tb_top.tcl`）跑到 1349305 ns 全 20 点 PASS，`$finish` 也在 1350285 ns 打印了，但交互会话不结束，tb 的 `Test is running` 一直刷到 46.5 ms 后**卡死**（日志末行是半截的 `debug_wb_p`，`xsimk` 进程 CPU 停在 267 s、日志 3 分钟不增长）。逐事件比对证明：GUI 这次与 `run_sim_cli.bat` 那次**逐字相同**，属 IDE 收尾问题、不是设计问题。处置：`Stop-Process -Id <xsimk>` 杀掉即可（不动 IDE）；以后一律用 `run_sim_cli.bat`，或在 GUI 里看到 `----PASS!!!` 就手动停。 另：死会话会占着 `xsim` 目录与工程状态，IDE 报“已有仿真在运行/`simulate.log` 被占用”时，先杀残留 `xsimk`；若启动仿真的那个 `vivado.exe` 已卡死（`Stop-Process` / `taskkill` 都杀不掉、仍占着 `simulate.log` 与 `*.wdb`），用 WMI `Invoke-CimMethod -InputObject (Get-CimInstance Win32_Process -Filter "ProcessId=NNNN") -MethodName Terminate` 杀掉（2026-09-15 实测，无需重启）；2026-09-15 20:39 清掉残留后 CLI 复跑一次 PASS（15 s，日志 `prj2/logs/exp8_xsim_run.log`）。GUI 那次还留下 `tb_top_behav.wdb` 1.48 GB（波形库，可删）。
 - 板子重烧（2026-09-15 20:22）：板子接回后重烧 exp8 的 bit（`impl_1/soc_lite_top.bit`，md5 `5a4a6484…826b`，与提交包内逐字节一致），`xc7a200t_0`、`End of startup status: HIGH`、`=== PROGRAM DONE ===`；日志 `prj2/logs/exp8_program_20260915b.log`。首连报 `jsn1 may be locked by another hw_server`，清掉残留 `hw_server` / `cs_server` 进程后重试即过（与 §八 记录的现象一致）。
-- exp8 阅读版注释（2026-09-15 晚，用户要求）：`prj2/exp8/myCPU/mycpu_top.v` 加了**行尾中文注释**（标 `【阻塞】` / `【cancel】` 两类冒险的处理点，503 → 509 行；剔除注释后代码逐行不变、xvlog 0 ERROR）。**注意**：该文件因此不再与提交包内同名文件逐字节一致（另外三个 `.v` 仍一致），也已与 `C:\vivado_prj\exp8\myCPU\` 分叉 —— 交付包 / 包内 patch / 仿真源一律未动，此文件仅供阅读；原件备份 `%TEMP%\mycpu_top.v.bak_pre_zh_20260915`。
+- exp8 阅读版注释（2026-09-15 晚，用户要求）：`prj2/exp8/myCPU/mycpu_top.v` 加了**行尾中文注释**（标 `【阻塞】` / `【cancel】` 两类冒险的处理点，503 → 509 行；剔除注释后代码逐行不变、xvlog 0 ERROR）。**注意**：该文件因此不再与提交包内同名文件逐字节一致（另外三个 `.v` 仍一致），也已与 `_vivado\exp8\myCPU\` 分叉 —— 交付包 / 包内 patch / 仿真源一律未动，此文件仅供阅读；原件备份 `%TEMP%\mycpu_top.v.bak_pre_zh_20260915`。
 - **exp7 包按新链重制 + 三链闭环复验（2026-09-29，用户要求）**：`patch/prj2_exp7_3_2024K8009929018.zip` 重打包 = 新链 exp7 RTL（`myCPU/`，mycpu_top.v 15367 B）+ `patch/mycpu_exp7_pipeline_vs_exp6.patch`（新链 exp6→exp7，551 行；**基线 = exp6 修正版单周期 `prj1/sim/ref_sc`**）+ 2026-09-15 重出 bit（WNS 3.922 ns）；解包核验目录 `patch/prj2_exp7_3_2024K8009929018/`；新包 md5 `0c5175ff…`，旧包（09-08 旧口径，md5 `b2602354…`）改名保留为 `patch/prj2_exp7_3_2024K8009929018_old20260908.zip`。闭环复验（`git -c core.autocrlf=false apply`）：`ref_sc` + 包内 patch → exp7 包 myCPU；+ `prj2_exp8…zip` 包内 patch → exp8 包 myCPU；+ `prj2_exp9…zip` 包内 patch → exp9 包 myCPU，三段逐字节一致。
 - exp6→exp7 patch 基线说明（2026-09-29 取证）：课程包 `ref/课程发布包/exp6.zip` 内 `exp6_wt_answer/myCPU/mycpu_top.v` 为 8415 B **单周期**版；`prj1/sim/ref_sc/` 是其修正版（+2/−1 行），即本次 patch 的基线。`prj1/exp6_wt_answer/myCPU`（15588 B）是当年做旧链 exp7 时留下的**流水线工作稿**，勿与单周期修正版混淆。
 - 同学材料（2026-09-29）：exp8/9 提交包 `给同学_exp8or9_提交包_20260929.zip` 放课程根目录（传用；副本与记录见 `同学参考/README.md`）。
@@ -238,9 +239,9 @@ C:\course_files\2026_autumn\
 ## 十二、2026-10-12 exp10/11 课程包入库与超前版对照
 
 - **来源与入库**：`C:\Users\17613\Downloads\download_from_edge_server\exp10.zip`（SHA256 1CB2A569…F0E）、`exp11.zip`（SHA256 C5DE1BF2…33A）已复制入 `ref/课程发布包/`；解出工作副本 `prj3/exp10`（122 文件）、`prj3/exp11`（120 文件）并建 `prj2/logs/`；解包与源 zip 逐文件哈希核对 diff=0。
-- **全量扫描：exp10/11 已跑过（超前版）**——`资料库\prj3_7_超前实验_未发布\prj3\` 内为超前完成版（myCPU 四文件已填）：exp10 n1~n36 全 PASS（`资料库\prj3_7_超前实验_未发布\prj3\logs\exp10_run.log`，2026-09-03）、exp11 n1~n46 全 PASS（`资料库\prj3_7_超前实验_未发布\prj3\logs\exp11_run.log`）；bit 已出（`C:\vivado_prj\exp10`、`C:\vivado_prj\exp11`，50 MHz：exp10 WNS+0.925/WHS+0.077、exp11 WNS+0.448/WHS+0.084，0 违规）；均未上板（当时板级未要求）。全量记录见 `资料库\研讨-计算机体系结构_README_20260904历史版.md`。
+- **全量扫描：exp10/11 已跑过（超前版）**——`资料库\prj3_7_超前实验_未发布\prj3\` 内为超前完成版（myCPU 四文件已填）：exp10 n1~n36 全 PASS（`资料库\prj3_7_超前实验_未发布\prj3\logs\exp10_run.log`，2026-09-03）、exp11 n1~n46 全 PASS（`资料库\prj3_7_超前实验_未发布\prj3\logs\exp11_run.log`）；bit 已出（`_vivado\exp10`、`_vivado\exp11`，50 MHz：exp10 WNS+0.925/WHS+0.077、exp11 WNS+0.448/WHS+0.084，0 违规）；均未上板（当时板级未要求）。全量记录见 `资料库\研讨-计算机体系结构_README_20260904历史版.md`。
 - **课程包 vs 超前版（官方包口径）对照**：新课程包与官方包 87 个文件不同（func 的 include / init.S / start.S / Makefile / 全部 n*.S / obj 镜像、gettrace 的 golden_trace.txt 与参考核 SimpleLACoreWrapRAM.v、sync_ram.v、create_project.tcl 等），且测试框架与课程 exp7~9 所用框架**逐字节同源**（asm.h、cpu_cde.h、test_config.h、n*.S 样例、sync_ram.v、mycpu_tb.v 均已哈希核对一致）——新课程包 = 课程修订框架 + 实验 10/11 镜像。`mycpu_tb.v` 与官方完全相同，**旧 myCPU 接口可直接复用**；但旧仿真与 bit 基于官方环境，对课程包**不直接生效，需按课程包复验**（测试范围不变：exp10 n1~n36、exp11 n1~n46；2026-10-12 复验通过，见下）。
-- **复验结果（2026-10-12）**：超前版 myCPU 已拷入 `prj3/exp10`、`prj3/exp11`，课程包的 testbench / gettrace / inst_ram.mif 已同步进 `C:\vivado_prj\exp10`、`exp11` 工程树；用 `run_sim_cli.bat 10` / `11`（Windows Vivado 2019.2 xsim）复跑：**exp10 n1~n36 全 PASS（1126075 ns）**、**exp11 n1~n46 全 PASS（1419475 ns）**，耗时 16 / 21 s、峰值约 224 MB；日志 `prj3/logs/exp10_xsim_run_20261012.log`、`exp11_xsim_run_20261012.log`。
+- **复验结果（2026-10-12）**：超前版 myCPU 已拷入 `prj3/exp10`、`prj3/exp11`，课程包的 testbench / gettrace / inst_ram.mif 已同步进 `_vivado\exp10`、`exp11` 工程树；用 `run_sim_cli.bat 10` / `11`（Windows Vivado 2019.2 xsim）复跑：**exp10 n1~n36 全 PASS（1126075 ns）**、**exp11 n1~n46 全 PASS（1419475 ns）**，耗时 16 / 21 s、峰值约 224 MB；日志 `prj3/logs/exp10_xsim_run_20261012.log`、`exp11_xsim_run_20261012.log`。
 - **待办**：① 课程包口径重出 bit（工程树已课程化，可跑 `build_all.tcl`）；② 之后再定提交与报告安排。
 - **代码仓库（2026-10-13 建立；2026-10-14 重构为「工作区=仓库根」）**：远端 GitHub 公开仓库 https://github.com/tryone667/tmp--calab-ucas （main 分支）。2026-10-14 起本目录整体即仓库工作树；结构、两条线与清理记录见 §十五。
 
@@ -290,7 +291,7 @@ C:\course_files\2026_autumn\
 - **exp12/13 入库**：源 `C:\Users\17613\Downloads\download_from_edge_server\exp12.zip`（SHA256 `533441148D0E2B3A3B293725484E0DACD7138C4067FE26259712E2FFED21A8BC`）、`exp13.zip`（SHA256 `7656EA67260FCF0A7F17A56C789ED7A8CC033879077D09C45622EE5FB680F47A`）已复制入 `ref/课程发布包/`，解出工作副本 `prj4/exp12`、`prj4/exp13`（各 120 文件，与 zip 逐文件哈希核对 diff=0）+ `prj4/logs/`。测试范围：exp12 = n1~n47（TEST1~4）、exp13 = n1~n58（TEST1~5）。
 - **对照结论（同 exp10/11 模式）**：新课程包 vs 官方 Lab06 包 87 个文件差异、vs 超前版同款 87 差异；框架文件（`asm.h` / `cpu_cde.h` / `test_config.h` / `mycpu_tb.v` / `sync_ram.v`）与课程 exp11 **逐字节一致**；`mycpu_tb.v` 与官方相同 → **超前版 myCPU 接口可直接复用；但旧仿真对课程包不直接生效，需按课程包复验**。
 - **超前版记录（资料库 prj4）**：exp12 n1~n47 全 PASS（1438135 ns）、exp13 n1~n58 全 PASS（2041805 ns）；bit 已出（WNS+0.403/WHS+0.108、WNS+0.279/WHS+0.115），未上板。`prj4/logs/` 已留档 4 份运行/综合日志。
-- **复验结果（2026-10-14）**：已完成——超前版 `myCPU/` 拷入 `prj4/exp12`、`prj4/exp13`，课程包 testbench / gettrace / inst_ram.mif 同步进 `C:\vivado_prj\exp12`、`exp13`。**exp12 n1~n47 全 PASS（1424705 ns）**；**exp13 首跑在 n49 失败**：`csrwr $r12,0x4`（ECFG）旧值参考 0x1bff vs 实现 0x1fff——手册表 7-5 规定 **ECFG bit10 为保留位 R0（恒读 0）**，我们的写路径把它当普通位存了；修复（`ectl_w` 结果掩 `& 13'h1bff`）后 **n1~n58 全 PASS（2029595 ns）**。日志：`prj4/logs/exp12_xsim_run_20261014.log`、`prj4/logs/exp13_xsim_run_20261014.log`；失败版留档 `exp13_xsim_run_20261014_fail_ecfg_bit10.log`。
+- **复验结果（2026-10-14）**：已完成——超前版 `myCPU/` 拷入 `prj4/exp12`、`prj4/exp13`，课程包 testbench / gettrace / inst_ram.mif 同步进 `_vivado\exp12`、`exp13`。**exp12 n1~n47 全 PASS（1424705 ns）**；**exp13 首跑在 n49 失败**：`csrwr $r12,0x4`（ECFG）旧值参考 0x1bff vs 实现 0x1fff——手册表 7-5 规定 **ECFG bit10 为保留位 R0（恒读 0）**，我们的写路径把它当普通位存了；修复（`ectl_w` 结果掩 `& 13'h1bff`）后 **n1~n58 全 PASS（2029595 ns）**。日志：`prj4/logs/exp12_xsim_run_20261014.log`、`prj4/logs/exp13_xsim_run_20261014.log`；失败版留档 `exp13_xsim_run_20261014_fail_ecfg_bit10.log`。
 - **待办**：课程包口径重出 bit（工程树已课程化，跑 `build_all.tcl`）；之后按批打包提交（exp12/13 增量 patch 待生成）。
 
 ## 十七、2026-10-14 晚（二）：exp11 优化与 prj3/4 报告 Demo
@@ -305,7 +306,7 @@ C:\course_files\2026_autumn\
 - **背景（助教反馈）**：exp9 验收后助教建议——三路前递的四选一优先级链把“不前递”（占比最高的常见情形）压在了链条末端；应改为**先判断“要不要前递”**：不前递直接读寄存器堆，需要前递再走 EX > MEM > WB 优先级链。
 - **改动**（`prj2/exp9/myCPU/mycpu_top.v`，`id_rj_value` / `id_rkd_value` 两处）：拆成“hit 判定 + 两级选择”——`rj_fwd_hit = fwd_ex | fwd_mem | fwd_wb`、内层 `fwd_ex ? ex : (fwd_mem ? mem : wb)`、末级 `hit ? 前递值 : rf_rdata`。语义不变；寄存器堆读出值由穿三级选择链变为只过一级 2:1 选择。
 - **等价性复验**：课程包 xsim **n1~n20 全 PASS**，20 个测试点时刻与 `$finish`（640355 ns）与改前**逐点一致**（逐拍等价）；日志 `prj2/logs/exp9_xsim_run_20261014_fwdopt.log`（基线 `exp9_xsim_run_20260929.log`）。
-- **时序**：重跑综合 / 实现 / 出 bit（2026-10-14 17:26）——布线后 **WNS 2.067 / TNS 0.000 / WHS 0.063 ns**（优化前 2.112 / 0.000 / 0.085；差异约 0.2% 周期，属实现重排与布线波动量级，两版均满收敛）；日志 `prj2/logs/exp9_vivado_20261014_fwdopt.log`。新 bit 在 `C:\vivado_prj\exp9\soc_verify\soc_bram\run_vivado\project\loongson.runs\impl_1\soc_lite_top.bit`（未上板）。
+- **时序**：重跑综合 / 实现 / 出 bit（2026-10-14 17:26）——布线后 **WNS 2.067 / TNS 0.000 / WHS 0.063 ns**（优化前 2.112 / 0.000 / 0.085；差异约 0.2% 周期，属实现重排与布线波动量级，两版均满收敛）；日志 `prj2/logs/exp9_vivado_20261014_fwdopt.log`。新 bit 在 `_vivado\exp9\soc_verify\soc_bram\run_vivado\project\loongson.runs\impl_1\soc_lite_top.bit`（未上板）。
 - **补丁链**：`exp8_to_exp9.patch` 重制（4051 → 4361 B）并全链闭环复验——`ref_sc → exp7 → exp8 → exp9` 三段 `git -c core.autocrlf=false apply` 后与各目标版本逐字节一致。
 - **报告**：prj2 报告升级——新增「四、课上助教反馈与对应优化」章节（优化前后对照 + 关键路径说明），验证表补优化行；重出 PDF（初版 10 页，当日晚按提交口径精简为 7 页，见下条）。
 - **报告提交版重排（当日晚续，用户对照同学参考件口径）**：prj2 报告全文精简（10 → 7 页），删除全部内部路径引用（日志/工程/补丁链等提交后读者看不到的引用，改用文字描述）；PDF 换素色排版（标题/表格不再用蓝色主题；三张插图为报告自身内容，保留原配色）。生成工具 `md2pdf_report.py` 新增可选样式参数 `plain`（不传时仍为原彩色版，供后续报告选用）。
@@ -408,11 +409,11 @@ C:\course_files\2026_autumn\
 - **exp15 RTL 重做（11-10 17:35）**：`prj5/exp15/myCPU` 换成“exp14 核心 + 单一共享 AXI4 主口”版本（`mycpu_top.v` 50786 B / 1315 行，端口为 `aclk/aresetn` + AR/R/AW/W/B 全通道）。流水线内部仍驱动**虚拟类 SRAM 握手**（`inst_sram_*`/`data_sram_*`），文件末尾新增 AXI 适配器：读通道单笔在途（`rd_st` 0/1/2；`rd_is_if` 区分取指/访存；重定向时 `rd_discard` 丢弃迟到的 R 响应），写通道 AW/W 各自握手后再等 B；EX 数据请求优先于 IF 取指。`alu.v` 同步为 exp14 的 18 位 `alu_op` 版本；`divider` 模块与 `id_alu_is_div` 去重全部保留（`id_alu_is_div` 只是从 ID 段移到除法器旁，纯位置调整）。**相对 exp14 的实质新增只有 AXI 适配器**——`divider`、18 位 `alu_op`、判重都是 exp14 就有的，本版只是承接（旧版 exp15/16 是超前包的内联除法器版，所以看起来像“新加了个 divider”）。
 - **14→15 patch**：`prj5/exp15/patch/exp14_to_exp15.patch`（12461 B，仅 `mycpu_top.v`，**+232/−34**）。**基线核对**：patch 头 `index a3488f6..1c39f53`，`a3488f6` 实测正是 `exp14/myCPU/mycpu_top.v` 的 blob、`1c39f53` 是 exp15（旧 exp15 的 blob 是 `25cacdd`）；把它套到**旧 exp15** 上 `git apply --check` 直接失败，套 exp13/exp16 也失败，只有套 exp14 通过——所以它是 **14→15**，不是“15 旧→15 新”（后者是 +173/−87，与 patch 的 +232/−34 无关，别混）。本次复核闭环：`exp14/myCPU` + patch → 与 `exp15/myCPU` 四文件**逐字节一致**（SHA256）。
 - **全链重建（2026-11-17 复核）**：从 `prj1/exp6/ref_sc` 起**只用 patch** 依次 `6→7→8→9→（10+11 合并）→12→13→14→15→16`，每一步都与目标版四文件逐字节一致，最终等于 `prj5/exp16/myCPU`——链上无缺口。exp10 只是记录分支（`exp9_to_exp10.patch` 能闭环但未进提交链）。
-- **exp15 bit（11-10 17:36~17:57）**：工程 `C:\vivado_prj\exp15_g`（`build_all.tcl`：综合 → 实现 → 布线后 `phys_opt_design -directive Explore` → 重写 bit）。布线后 **WNS +0.223 / TNS 0.000 / WHS +0.025 ns**，约束全满足；bit `soc_verify/soc_axi/run_vivado/soc_lite_top.bit`（9 730 761 B）。
+- **exp15 bit（11-10 17:36~17:57）**：工程 `_vivado\exp15_g`（`build_all.tcl`：综合 → 实现 → 布线后 `phys_opt_design -directive Explore` → 重写 bit）。布线后 **WNS +0.223 / TNS 0.000 / WHS +0.025 ns**，约束全满足；bit `soc_verify/soc_axi/run_vivado/soc_lite_top.bit`（9 730 761 B）。
 - **验收（11-17）**：exp15 **通过**；课程口径 exp15/exp16 **合并验收**。
-- **exp16 承接 + 结构整理（11-17）**：`prj5/exp16/myCPU` 先承接 exp15 的 RTL（四文件逐字节相同），再按助教在 exp14 验收后提的 ①② 做**纯结构改写**（详见 §二十五）：fetch 的**请求/发起/响应/冲刷控制合成一个 always 块**，**PC 数据通路与 instruction 数据通路各拆一个独立 always 块**（原先把控制与 pc/inst 全挤在一个块里）。`prj5/exp16/patch/exp15_to_exp16.patch` 重制为 **4149 B（`mycpu_top.v`，+36/−15）**，闭环复验逐字节一致。行为不变：重跑 xsim **n1~n58 PASS、最后测试点 7733045 ns、`$finish` 7735215 ns，与 exp15 逐点一致**（日志 `prj5/logs/exp16_xsim_20261117_refactor.log`）。bit 在 `C:\vivado_prj\exp16_g` 重出（`build_all.tcl` 同 exp15）：布线后 **WNS +0.083 / TNS 0.000 / WHS +0.037 ns**，约束全满足，bit 9 730 761 B，日志 `prj5/logs/exp16_vivado_20261117_refactor.log`；提交包 `patch/prj5_exp16_3.zip` 已按新 RTL/patch/bit 重打（673 195 B）；exp15 包 `patch/prj5_exp15_3.zip` 不动。
+- **exp16 承接 + 结构整理（11-17）**：`prj5/exp16/myCPU` 先承接 exp15 的 RTL（四文件逐字节相同），再按助教在 exp14 验收后提的 ①② 做**纯结构改写**（详见 §二十五）：fetch 的**请求/发起/响应/冲刷控制合成一个 always 块**，**PC 数据通路与 instruction 数据通路各拆一个独立 always 块**（原先把控制与 pc/inst 全挤在一个块里）。`prj5/exp16/patch/exp15_to_exp16.patch` 重制为 **4149 B（`mycpu_top.v`，+36/−15）**，闭环复验逐字节一致。行为不变：重跑 xsim **n1~n58 PASS、最后测试点 7733045 ns、`$finish` 7735215 ns，与 exp15 逐点一致**（日志 `prj5/logs/exp16_xsim_20261117_refactor.log`）。bit 在 `_vivado\exp16_g` 重出（`build_all.tcl` 同 exp15）：布线后 **WNS +0.083 / TNS 0.000 / WHS +0.037 ns**，约束全满足，bit 9 730 761 B，日志 `prj5/logs/exp16_vivado_20261117_refactor.log`；提交包 `patch/prj5_exp16_3.zip` 已按新 RTL/patch/bit 重打（673 195 B）；exp15 包 `patch/prj5_exp15_3.zip` 不动。
 - **验证（新版口径，2026-11-17，Vivado xsim）**：exp15、exp16 各跑一遍课程包 `soc_axi` 测试台（行为级 `axi_crossbar_1x2.v` / `axi_ram.v`，`SIMU_USE_PLL=0`，tb 传 `SIMULATION=1`，故不例化 PLL）：两版均 **n1~n58 全 PASS**，最后测试点 **7733045 ns**、`$finish` 7735215 ns（两版逐点一致）；exp16 结构改写后又单独复跑一次，仍是同两点同一时刻。日志 `prj5/logs/exp15_xsim_20261117.log`、`exp16_xsim_20261117.log`、`exp16_xsim_20261117_refactor.log`。综合/实现：exp15 WNS +0.223 / WHS +0.025，exp16（改写后）WNS +0.083 / WHS +0.037，均 0 失败端点、约束满足。
-- **超前版作废（用户 2026-11-17 口径）**：超前版的综合与上板记录一律无效——**2026-09-04 的 `C:\vivado_prj\exp15`、`exp16` 两套 bit，以及 11-02 的 iverilog PASS（7870555 ns）都不能当验证依据**；只有 11-10 的 `exp15_g` 与 11-17 的 `exp16_g` 这一轮算数。**2026-11-17 已把作废工程归档**：`C:\vivado_prj\_archive_20261117\`（含 exp15/exp16/exp17~20 超前版、exp14_prev20261102、重复的 exp14_opt、exp7_cls/exp8_cls，附 README 说明）；有效工程为 `C:\vivado_prj\exp14`、`exp15_g`、`exp16_g`、`div_check`。
+- **超前版作废（用户 2026-11-17 口径）**：超前版的综合与上板记录一律无效——**2026-09-04 的 `_vivado\exp15`、`exp16` 两套 bit，以及 11-02 的 iverilog PASS（7870555 ns）都不能当验证依据**；只有 11-10 的 `exp15_g` 与 11-17 的 `exp16_g` 这一轮算数。**2026-11-17 已把作废工程归档**：`_vivado\_archive_20261117\`（含 exp15/exp16/exp17~20 超前版、exp14_prev20261102、重复的 exp14_opt、exp7_cls/exp8_cls，附 README 说明）；有效工程为 `_vivado\exp14`、`exp15_g`、`exp16_g`、`div_check`。
 - **提交包**：`patch/prj5_exp15_3.zip`、`patch/prj5_exp16_3.zip`（结构同前，含对应新版 bit）。**exp16 结构改写后的新 bit 上板也跑通（2026-11-17，用户确认）**——即 exp15、exp16 两版、含 exp16 整理后的版本，上板全部通过。
 - **工作规矩重申（用户 2026-11-17 口径）**：以后每个实验一律从**上一实验的代码**往后改（适配、优化），不得从超前实验包整包抄；exp16 即按此执行（从 exp15 承接，而不是从资料库超前版重来）。
 ## 二十七、2026-11-17：实验规矩定死（patch 唯一基线、禁止抄超前包）
@@ -429,8 +430,8 @@ C:\course_files\2026_autumn\
 
 - **patch 链（唯一基线）**：ef_sc → 7 → 8 → 9 →（10+11 合并）→ 12 → 13 → 14 → 15 → 16。2026-11-17 复核：从 prj1/exp6/ref_sc 起只用 patch 逐段重建，每段与目标版四文件逐字节一致，最终等于 prj5/exp16/myCPU；exp10 仅记录分支（exp9_to_exp10.patch），不单独提交。
 - **废弃清单（只作历史，禁止作为起点）**：
-  - 超前版 exp14/15/16（资料库\prj3_7_超前实验_未发布\prj5，旧 exp15 blob 25cacdd）与 C:\vivado_prj\exp15、exp16、exp14_prev20261102 旧工程；
-  - exp11 课后清理版（C:\vivado_prj\exp11\myCPU 的 27 246 B 副本，含 divider 模块，不是提交基线）；
+  - 超前版 exp14/15/16（资料库\prj3_7_超前实验_未发布\prj5，旧 exp15 blob 25cacdd）与 `_vivado\_archive_20261117\` 下的 exp15、exp16、exp14_prev20261102 旧工程；
+  - exp11 课后清理版（_vivado\exp11\myCPU 的 27 246 B 副本，含 divider 模块，不是提交基线）；
   - **clz 单拍组合版**：源码只存在于 git 历史（35da262 加入、175c40 回退），工作区/资料库/Vivado 工程树内已无副本；保留失败日志 prj5/logs/exp14_vivado_20261102_fastdiv_wns-4.026.log 作证据；
   - 旧链提交包 patch/prj2_exp7_3_2024K8009929018_old20260908.zip。
 - **patch 里有没有 clz 失败场景**：没有。10 份 patch 中只有 exp13_to_exp14.patch（6 处 clz，均为流水化 SHIFT/LOAD/ITER）与 exp14_to_exp15.patch（1 处，仅头部注释提到“pipelined clz fast path”）；其余 0 处。失败的单拍组合版从未进入任何 patch，跑通的流水化版不算。

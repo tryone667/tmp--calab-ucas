@@ -26,3 +26,5 @@ prj2/exp7_refactor/
 xsim.dir/
 webtalk*
 *.bak*
+# Vivado 工程树（2026-11-17 从 C:\vivado_prj 迁入；本地-only，不入库）
+/_vivado/
