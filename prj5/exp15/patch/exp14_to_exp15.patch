@@ -1,0 +1,309 @@
+diff --git a/myCPU/mycpu_top.v b/myCPU/mycpu_top.v
+index a3488f6..1c39f53 100644
+--- a/myCPU/mycpu_top.v
++++ b/myCPU/mycpu_top.v
+@@ -1,41 +1,67 @@
+ // ============================================================================
+-// 5-stage pipeline CPU (IF -> ID -> EX -> MEM -> WB) with SoC handshaking
+-// SRAM interface (exp14: soc_hs_bram).  Same instruction set / exception /
+-// CSR behaviour as the verified exp13 core; only the two memory ports are
+-// replaced by request/addr_ok/data_ok transactions:
++// 5-stage pipeline CPU (IF -> ID -> EX -> MEM -> WB) with a single shared
++// AXI4 master port (exp15/16: soc_axi).  Instruction set / exception / CSR
++// behaviour are those of the verified exp14 core, and the exp14 structural
++// work is kept:
++//  - divider: standalone `divider` module (pipelined clz fast path + aligned
++//    iteration), instantiated once in EX; div/mod never enter the ALU cone,
++//    so `alu_op` stays 18 bits wide
+ //  - instruction fetch: serialized single-outstanding reads; completed words
+ //    queue (depth 1) into the IF stage; redirects flush the queue and discard
+-//    an in-flight (in-order) response when it finally arrives
+-//  - data access: the memory instruction stays in EX until data_ok returns
+-//    (read data captured in EX, carried through MEM), so only one data
+-//    transaction can be outstanding and older memory ops always complete
+-//    before younger ones issue
+-//  - divider: standalone `divider` module (fast paths + aligned iteration),
+-//    instantiated once in EX; div/mod results never enter the ALU cone
++//    an in-flight response when it finally arrives
++//  - data access: the memory instruction stays in EX until the transaction
++//    completes (read data captured in EX, carried through MEM), so older
++//    memory ops always finish before younger ones issue
++//  - EX data requests are arbitrated ahead of IF fetches and only one AXI
++//    transaction is in flight at a time
++//  - the pipeline drives "virtual" SRAM-style handshakes (inst_sram_*,
++//    data_sram_*), translated at the bottom of this file into single-beat
++//    AXI4 transactions (len = 0, INCR burst)
+ // ============================================================================
+ module mycpu_top(
+-    input  wire        clk,
+-    input  wire        resetn,
+-    // inst sram handshake interface
+-    output wire        inst_sram_req,
+-    output wire        inst_sram_wr,
+-    output wire [1:0]  inst_sram_size,
+-    output wire [3:0]  inst_sram_wstrb,
+-    output wire [31:0] inst_sram_addr,
+-    output wire [31:0] inst_sram_wdata,
+-    input  wire        inst_sram_addr_ok,
+-    input  wire        inst_sram_data_ok,
+-    input  wire [31:0] inst_sram_rdata,
+-    // data sram handshake interface
+-    output wire        data_sram_req,
+-    output wire        data_sram_wr,
+-    output wire [1:0]  data_sram_size,
+-    output wire [3:0]  data_sram_wstrb,
+-    output wire [31:0] data_sram_addr,
+-    output wire [31:0] data_sram_wdata,
+-    input  wire        data_sram_addr_ok,
+-    input  wire        data_sram_data_ok,
+-    input  wire [31:0] data_sram_rdata,
++    input  wire        aclk,
++    input  wire        aresetn,      // low active
++    // AXI master read address channel
++    output wire [ 3:0] arid,
++    output wire [31:0] araddr,
++    output wire [ 7:0] arlen,
++    output wire [ 2:0] arsize,
++    output wire [ 1:0] arburst,
++    output wire [ 1:0] arlock,
++    output wire [ 3:0] arcache,
++    output wire [ 2:0] arprot,
++    output wire        arvalid,
++    input  wire        arready,
++    // AXI master read data channel
++    input  wire [ 3:0] rid,
++    input  wire [31:0] rdata,
++    input  wire [ 1:0] rresp,
++    input  wire        rlast,
++    input  wire        rvalid,
++    output wire        rready,
++    // AXI master write address channel
++    output wire [ 3:0] awid,
++    output wire [31:0] awaddr,
++    output wire [ 7:0] awlen,
++    output wire [ 2:0] awsize,
++    output wire [ 1:0] awburst,
++    output wire [ 1:0] awlock,
++    output wire [ 3:0] awcache,
++    output wire [ 2:0] awprot,
++    output wire        awvalid,
++    input  wire        awready,
++    // AXI master write data channel
++    output wire [ 3:0] wid,
++    output wire [31:0] wdata,
++    output wire [ 3:0] wstrb,
++    output wire        wlast,
++    output wire        wvalid,
++    input  wire        wready,
++    // AXI master write response channel
++    input  wire [ 3:0] bid,
++    input  wire [ 1:0] bresp,
++    input  wire        bvalid,
++    output wire        bready,
+     // trace debug interface
+     output wire [31:0] debug_wb_pc,
+     output wire [ 3:0] debug_wb_rf_we,
+@@ -43,6 +69,32 @@ module mycpu_top(
+     output wire [31:0] debug_wb_rf_wdata
+ );
+ 
++// clock/reset names kept for the (unchanged) exp14 core body
++wire clk = aclk;
++wire resetn = aresetn;
++
++// virtual SRAM-style interfaces between the pipeline and the AXI adapters
++// (the core body is bit-for-bit the exp14 logic; adapters below translate)
++wire        inst_sram_req;
++wire        inst_sram_wr;
++wire [ 1:0] inst_sram_size;
++wire [ 3:0] inst_sram_wstrb;
++wire [31:0] inst_sram_addr;
++wire [31:0] inst_sram_wdata;
++wire        inst_sram_addr_ok;
++wire        inst_sram_data_ok;
++wire [31:0] inst_sram_rdata;
++
++wire        data_sram_req;
++wire        data_sram_wr;
++wire [ 1:0] data_sram_size;
++wire [ 3:0] data_sram_wstrb;
++wire [31:0] data_sram_addr;
++wire [31:0] data_sram_wdata;
++wire        data_sram_addr_ok;
++wire        data_sram_data_ok;
++wire [31:0] data_sram_rdata;
++
+ reg reset;
+ always @(posedge clk) reset <= ~resetn;
+ 
+@@ -403,7 +455,6 @@ assign src_reg_is_rd = inst_beq | inst_bne | inst_blt | inst_bge
+ 
+ assign src1_is_pc    = inst_jirl | inst_bl | inst_pcaddu12i;
+ wire   src1_is_csr   = inst_csrrd | inst_csrwr | inst_csrxchg;
+-wire   id_alu_is_div = inst_div_w | inst_div_wu | inst_mod_w | inst_mod_wu;
+ 
+ assign src2_is_imm   = inst_slli_w |
+                        inst_srli_w |
+@@ -743,6 +794,7 @@ reg  [ 4:0] ex_dest;
+ reg         ex_alu_is_div;  // instruction in EX is div/mod
+ 
+ // ---- multi-cycle divider unit (div/mod instructions) ----
++wire        id_alu_is_div = inst_div_w | inst_div_wu | inst_mod_w | inst_mod_wu;
+ wire        ex_div_start  = id_to_ex_valid && ex_allowin && id_alu_is_div;
+ wire        ex_div_busy;
+ wire [31:0] ex_div_result;
+@@ -976,8 +1028,154 @@ assign debug_wb_rf_we    = {4{rf_we}};
+ assign debug_wb_rf_wnum  = wb_dest;
+ assign debug_wb_rf_wdata = wb_value;
+ 
++
++// ============================================================================
++// AXI master adapters (exp15/16, single shared AXI port)
++// ----------------------------------------------------------------------------
++// The core above drives and samples the virtual SRAM handshakes; these
++// adapters translate them into AXI4 single-beat transactions:
++//   IF fetch / EX load : AR handshake -> addr_ok, R handshake -> data_ok
++//   EX store           : AW handshake -> addr_ok, B handshake -> data_ok
++//                        (W data is presented until WREADY)
++// EX data requests win the bus over IF fetches.  A fetch request whose AR is
++// still pending when a redirect commits cannot be cancelled on the bus; its
++// late response is swallowed (rd_discard) instead of being offered to the IF
++// engine, which simply re-issues from the redirect target.
++// ============================================================================
++wire if_fetch_want = if_fetch_issue;
++wire data_want     = data_mem_op && !data_done && !data_st;
++wire data_want_ld  = data_want && data_is_load;
++wire data_want_wr  = data_want && data_is_wr;
++
++// ---------------- read channel (IF fetches + EX loads share it) ------------
++reg  [1:0]  rd_st;        // 0 idle, 1 AR pending, 2 waiting for the R beat
++reg         rd_is_if;     // current read is an IF fetch
++reg         rd_discard;   // IF fetch flushed while its AR was pending
++reg  [31:0] rd_addr;      // address latched when the read started
++
++wire rd_idle   = (rd_st == 2'd0);
++wire rd_ar_ok  = (rd_st == 2'd1);
++wire rd_r_wait = (rd_st == 2'd2);
++
++wire if_ar_start   = rd_idle && (wr_st == 2'd0) && if_fetch_want && !data_want;
++wire data_ar_start = rd_idle && (wr_st == 2'd0) && data_want_ld;
++
++always @(posedge clk) begin
++    if (reset) begin
++        rd_st      <= 2'd0;
++        rd_is_if   <= 1'b0;
++        rd_discard <= 1'b0;
++        rd_addr    <= 32'b0;
++    end
++    else begin
++        // start: drive ARVALID with the latched transaction address
++        if (if_ar_start || data_ar_start) begin
++            rd_st      <= 2'd1;
++            rd_is_if   <= if_ar_start;
++            rd_discard <= 1'b0;
++            rd_addr    <= if_ar_start ? inst_sram_addr : data_sram_addr;
++        end
++        // AR accepted -> wait for the single-beat R response
++        if (rd_ar_ok && arready) rd_st <= 2'd2;
++        // R response retired
++        if (rd_r_wait && rvalid && rlast) rd_st <= 2'd0;
++        // a redirect that commits while the IF fetch AR is still pending
++        // cannot cancel the bus request: swallow its late response
++        if (redirect_flush && rd_ar_ok && rd_is_if) rd_discard <= 1'b1;
++    end
++end
++
++// ---------------- write channel (EX stores) --------------------------------
++reg  [1:0]  wr_st;        // 0 idle, 1 AW/W phase, 2 waiting for the B beat
++reg         aw_done;      // AWREADY seen for the current write
++reg         w_done;       // WREADY seen for the current write
++reg  [31:0] wr_addr;
++reg  [31:0] wr_data;
++reg  [ 3:0] wr_strb;
++reg  [ 2:0] wr_size;
++
++wire wr_aw_ok  = (wr_st == 2'd1) && !aw_done;
++wire wr_w_ok   = (wr_st == 2'd1) && !w_done;
++wire wr_b_wait = (wr_st == 2'd2);
++
++wire wr_start  = (wr_st == 2'd0) && rd_idle && data_want_wr;
++
++always @(posedge clk) begin
++    if (reset) begin
++        wr_st   <= 2'd0;
++        aw_done <= 1'b0;
++        w_done  <= 1'b0;
++        wr_addr <= 32'b0;
++        wr_data <= 32'b0;
++        wr_strb <= 4'b0;
++        wr_size <= 3'b0;
++    end
++    else begin
++        case (wr_st)
++        2'd0: if (wr_start) begin
++                  wr_st   <= 2'd1;
++                  aw_done <= 1'b0;
++                  w_done  <= 1'b0;
++                  wr_addr <= data_sram_addr;
++                  wr_data <= data_sram_wdata;
++                  wr_strb <= data_sram_wstrb;
++                  wr_size <= {1'b0, data_sram_size};
++              end
++        2'd1: begin
++                  // AW and W are independent: accept whichever comes first
++                  if (wr_aw_ok && awready) aw_done <= 1'b1;
++                  if (wr_w_ok  && wready ) w_done  <= 1'b1;
++                  if ((aw_done || (wr_aw_ok && awready)) &&
++                      (w_done  || (wr_w_ok  && wready ))) wr_st <= 2'd2;
++              end
++        2'd2: if (bvalid) wr_st <= 2'd0;   // BREADY is held high here
++        endcase
++    end
++end
++
++// ---------------- AXI master output drive -----------------------------------
++assign arid    = 4'd0;
++assign araddr  = rd_addr;
++assign arlen   = 8'd0;
++assign arsize  = rd_is_if ? 3'b010 : {1'b0, data_sram_size};
++assign arburst = 2'b01;    // INCR
++assign arlock  = 2'b00;
++assign arcache = 4'b0000;
++assign arprot  = 3'b000;
++assign arvalid = rd_ar_ok;
++assign rready  = rd_r_wait;
++
++assign awid    = 4'd0;
++assign awaddr  = wr_addr;
++assign awlen   = 8'd0;
++assign awsize  = wr_size;
++assign awburst = 2'b01;    // INCR
++assign awlock  = 2'b00;
++assign awcache = 4'b0000;
++assign awprot  = 3'b000;
++assign awvalid = wr_aw_ok;
++
++assign wid     = 4'd0;
++assign wdata   = wr_data;
++assign wstrb   = wr_strb;
++assign wlast   = wr_w_ok;
++assign wvalid  = wr_w_ok;
++
++assign bready  = wr_b_wait;
++
++// ---------------- virtual handshake back to the pipeline --------------------
++assign inst_sram_addr_ok = rd_ar_ok && arready && rd_is_if && !rd_discard;
++assign inst_sram_data_ok = rd_r_wait && rvalid && rlast && rd_is_if
++                         && !rd_discard;
++assign inst_sram_rdata   = rdata;
++assign data_sram_addr_ok = (rd_ar_ok && arready && !rd_is_if) ||
++                           (wr_aw_ok && awready);
++assign data_sram_data_ok = (rd_r_wait && rvalid && rlast && !rd_is_if) ||
++                           (wr_b_wait && bvalid);
++assign data_sram_rdata   = rdata;
+ endmodule
+ 
++
+ // ---------------------------------------------------------------------------
+ // Multi-cycle divider with a pipelined fast path.
+ //   start -> [fast? result now] : latch magnitudes, sign flags
