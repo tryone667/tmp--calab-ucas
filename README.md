@@ -40,9 +40,9 @@ C:\course_files\2026_autumn\
 | exp11.zip | exp11 | 转移+访存指令 | n1~n46 | prj3/exp11 | ✅ 课程包复验 n1~n46 PASS（2026-10-12）；**2026-10-14 除法器优化版复验 PASS（1234675 ns，-13%，见 §十七）**；超前版 bit 已出、未烧 |
 | exp12.zip | exp12 | syscall 例外（TEST4） | n1~n47 | prj4/exp12 | ✅ 课程包 xsim 复验 n1~n47 PASS（2026-10-14，见 §十六）；超前版 bit 已出、未烧 |
 | exp13.zip | exp13 | 更多例外（TEST5） | n1~n58 | prj4/exp13 | ✅ 课程包 xsim 复验 n1~n58 PASS（2026-10-14；修复 ECFG bit10 后重跑，见 §十六）；**2026-10-26 bit 重出（WNS 0.081 ns）、提交包 `patch/prj4_exp13_3.zip`（见 §二十）** |
-| exp14.zip | exp14 | 类 SRAM 握手接口 | n1~n58 | prj5/exp14 | ✅ 课程包复验 n1~n58 PASS（2026-11-02，9946285 ns）；bit 重出（WNS +0.002）；提交包 `patch/prj5_exp14_3.zip`（见 §二十二） |
-| exp15.zip | exp15 | 类 SRAM→AXI4 转接桥 | n1~n58 | prj5/exp15 | ✅ 课程包 iverilog 复验 n1~n58 PASS（7870555 ns，2026-11-02）；xsim/bit 待做 |
-| exp16.zip | exp16 | AXI 接口（与 exp15 同包） | n1~n58 | prj5/exp16 | ✅ 课程包 iverilog 复验 n1~n58 PASS（7870555 ns）；与 exp15 包/RTL 相同，待确认口径 |
+| exp14.zip | exp14 | 类 SRAM 握手接口 | n1~n58 | prj5/exp14 | ✅ 课程包复验 n1~n58 PASS（9946285 → **9834235 ns**，流水化除法版，2026-11-02）；bit 重出（**WNS +0.006**）；提交包 `patch/prj5_exp14_3.zip`（见 §二十二） |
+| exp15.zip | exp15 | 类 SRAM→AXI4 转接桥 | n1~n58 | prj5/exp15 | ✅ **2026-11-10 按 exp14 基线重做**（单 AXI4 主口，保留 `divider`/18 位 `alu_op`）；14→15 patch 12461 B 闭环；bit 已出（WNS +0.223）；**2026-11-17 验收通过**（旧版 7870555 ns 为 11-02 超前版记录，见 §二十六） |
+| exp16.zip | exp16 | AXI 接口（与 exp15 同包） | n1~n58 | prj5/exp16 | ✅ **RTL 承接 exp15**（两课程包逐字节相同、无功能增量；15→16 patch 769 B 仅注释）；bit 已出（**WNS +0.223**）；提交包 `patch/prj5_exp16_3.zip`；与 exp15 合并验收 |
 
 报告归属（课程 PPT 的 6 份报告清单，见 §九）：
 
@@ -355,7 +355,7 @@ C:\course_files\2026_autumn\
 - **除法算法落地**：直接搬运的单拍 clz 版本组合路径无法满足 50 MHz；改为流水化实现后通过综合与时序验证。复跑 **n1~n58 全 PASS，9834235 ns（较改造前 9946285 ns 约 -1.1%）**，仿真日志 `prj5/logs/exp14_iverilog_20261102_pipelined.log`。
 - **exp14 bit 重出（2026-11-02）**：post-physopt **WNS +0.006 / TNS 0.000 / WHS +0.036 ns**（约束满足、0 失败端点；余量极小，上板需实测）；日志 `prj5/logs/exp14_vivado_20261102_opt.log`。
 - **exp14 提交包**：`patch/prj5_exp14_3.zip`（`prj5_3/{myCPU, patch/mycpu_exp14_vs_exp13.patch, soc_lite_top.bit}`）；13→14 patch 26286 B，闭环复验逐字节一致。
-- **待办**：① exp15/16 仍为旧内联除法器，后续套用 exp14 的清理与流水化除法；② exp15/16 的 xsim/bit 与 patch 链在 11-17 验收前完成；③ exp16 与课程确认是否需要 burst/outstanding。
+- **待办（2026-11-10/11-17 已处理 ①②）**：① exp15/16 仍为旧内联除法器，后续套用 exp14 的清理与流水化除法；② exp15/16 的 bit 与 patch 链；③ exp16 与课程确认是否需要 burst/outstanding —— ①②见 §二十六（exp15 已重做；exp16 承接 exp15），③ 两课程包逐字节相同，暂无线索。
 
 ## 二十三、2026-11-02 晚：exp14 之前按验收版本定版（血缘澄清）
 
@@ -381,7 +381,7 @@ C:\course_files\2026_autumn\
 5. **本组结构清理的归属**：exp11 验收后提出的结构清理（独立 `divider` 模块、18 位 `alu_op`、判定去重）未进 exp12/13（组内同学版本），已在 exp13→exp14 的 patch 中统一补入，并在专题四报告中说明。
 6. **命名**：小组实验不再带学号，提交包 `prjN_expM_箱子号.zip`，包内顶层 `prjN_箱子号/`（见 §二十一）。
 
-## 二十五、2026-11-02：优化台账与当前缺口
+## 二十五、2026-11-02：优化台账与当前缺口（2026-11-17 更新 exp15/16 两行）
 
 | 优化 | 状态 | 落在哪里 |
 |---|---|---|
@@ -389,8 +389,19 @@ C:\course_files\2026_autumn\
 | exp11 结构清理（divider 模块、`alu_op` 18、去重） | 课后完成；未进 exp10/11、exp12/13 patch；**已在 exp14 补入** | exp13→exp14 patch / exp14 提交包 |
 | exp11 除法 clz 对齐迭代 | **已在 exp14 落地（流水化 SHIFT/LOAD/ITER）**；仿真 -1.1% | exp13→exp14 patch / exp14 包 |
 | exp14 类 SRAM 握手 + 清理 + 流水化除法 | 已进 13→14 patch、bit、包（WNS +0.006） | prj5/exp14 |
-| exp15/16 结构补齐 | 待完成（当前 RTL 仍是旧内联版） | 待办：按 exp14 的结构补齐，再出 14→15、15→16 patch |
-| exp15/16 AXI 功能 | 课程包复验 n1~n58 PASS；xsim/bit 未做 | 待办 |
+| exp15/16 结构补齐 | **exp15 已完成（2026-11-10，远程 agent 重做为单 AXI4 主口，保留 exp14 的 `divider`/18 位 `alu_op`）；exp16 承接 exp15，无功能增量** | `prj5/exp15/patch/exp14_to_exp15.patch`（12461 B）/ exp15；`prj5/exp16/patch/exp15_to_exp16.patch`（769 B，仅注释）/ exp16 |
+| exp15/16 AXI 功能 | exp15 验收通过（2026-11-17）；exp16 与 exp15 同 RTL、合并验收；**新版 RTL 无功能仿真记录**（11-02 的 7870555 ns 跑的是超前版） | 待补：功能仿真日志与提交包 |
 
-- **当前待办**：exp15/16 的结构补齐与 patch/bit 尚未完成；其余事项均已用报告口径说明或已在 exp14 闭合。
+- **当前待办**：① exp15/16 新版 RTL 的功能仿真记录（提交包已于 11-17 补打：`prj5_exp15_3.zip`、`prj5_exp16_3.zip`）；② `reports/prj5/04_*.md` 验证表仍是 11-02 旧版数字，待按新 RTL 重写；其余事项均已用报告口径说明或已在 exp14 闭合。
 - exp10 没有单独 patch 是提交方式决定的（exp10/11 合并提交，patch 相对 exp9），不算缺口。
+
+## 二十六、2026-11-10/11-17：exp15 按 exp14 基线重做、验收，exp16 承接
+
+- **执行方式**：2026-11-10 由远程 agent（SSH 到本机）直接改写工作区，未留文档；2026-11-17 本次逐项核对代码/日志后补记本节。
+- **exp15 RTL 重做（11-10 17:35）**：`prj5/exp15/myCPU` 换成“exp14 核心 + 单一共享 AXI4 主口”版本（`mycpu_top.v` 50786 B / 1315 行，端口为 `aclk/aresetn` + AR/R/AW/W/B 全通道）。流水线内部仍驱动**虚拟类 SRAM 握手**（`inst_sram_*`/`data_sram_*`），文件末尾新增 AXI 适配器：读通道单笔在途（`rd_st` 0/1/2；`rd_is_if` 区分取指/访存；重定向时 `rd_discard` 丢弃迟到的 R 响应），写通道 AW/W 各自握手后再等 B；EX 数据请求优先于 IF 取指。`alu.v` 同步为 exp14 的 18 位 `alu_op` 版本；`divider` 模块与 `id_alu_is_div` 去重全部保留（`id_alu_is_div` 只是从 ID 段移到除法器旁，纯位置调整）。**相对 exp14 的实质新增只有 AXI 适配器**——`divider`、18 位 `alu_op`、判重都是 exp14 就有的，本版只是承接（旧版 exp15/16 是超前包的内联除法器版，所以看起来像“新加了个 divider”）。
+- **14→15 patch**：`prj5/exp15/patch/exp14_to_exp15.patch`（12461 B，仅 `mycpu_top.v`，+177/−91）。本次复核闭环：`exp14/myCPU` + patch → 与 `exp15/myCPU` 四文件**逐字节一致**（SHA256）。
+- **exp15 bit（11-10 17:36~17:57）**：工程 `C:\vivado_prj\exp15_g`（`build_all.tcl`：综合 → 实现 → 布线后 `phys_opt_design -directive Explore` → 重写 bit）。布线后 **WNS +0.223 / TNS 0.000 / WHS +0.025 ns**，约束全满足；bit `soc_verify/soc_axi/run_vivado/soc_lite_top.bit`（9 730 761 B）。
+- **验收（11-17）**：exp15 **通过**；课程口径 exp15/exp16 **合并验收**。
+- **exp16 承接（11-17）**：`prj5/exp16/myCPU` 改为 exp15 的 RTL（四文件逐字节相同），仅在 `mycpu_top.v` 头部加一段注释说明“exp16 相对 exp15 无功能增量（两课程包逐字节相同：同 soc_axi SoC、同 n1~n58 测试）”；`prj5/exp16/patch/exp15_to_exp16.patch`（769 B，仅注释）闭环复验逐字节一致；bit 在 `C:\vivado_prj\exp16_g` 重出（`build_all.tcl` 同 exp15）：**WNS +0.223 / TNS 0.000 / WHS +0.025 ns**，约束全满足（与 exp15 同值），bit 9 730 761 B，日志 `prj5/logs/exp16_vivado_20261117.log`；提交包 `patch/prj5_exp16_3.zip`（`prj5_3/{myCPU, patch/mycpu_exp16_vs_exp15.patch, soc_lite_top.bit}`），exp15 包同结构 `patch/prj5_exp15_3.zip`。
+- **缺口（如实记）**：exp15/exp16 的新版 RTL **没有功能仿真记录**（11-02 的 iverilog PASS 7870555 ns 跑的是超前版 RTL）；两版的验证只有综合/实现时序 + 上板验收。提交包已于 2026-11-17 补齐（`patch/prj5_exp15_3.zip`、`patch/prj5_exp16_3.zip`）。
+- **工作规矩重申（用户 2026-11-17 口径）**：以后每个实验一律从**上一实验的代码**往后改（适配、优化），不得从超前实验包整包抄；exp16 即按此执行（从 exp15 承接，而不是从资料库超前版重来）。
