@@ -18,10 +18,12 @@
 //    data_sram_*), translated at the bottom of this file into single-beat
 //    AXI4 transactions (len = 0, INCR burst)
 //
-// exp16: no functional delta from exp15.  The exp15 and exp16 course packages
-// are byte-identical (same soc_axi SoC, same n1~n58 tests), so this core is
-// exp15's RTL carried forward unchanged; only this note differs.  The pair is
-// accepted together on the one shared AXI4 master.
+// exp16: structural follow-up to the TA feedback given after exp14 acceptance.
+// Request/issue/response control of the fetch engine now lives in ONE control
+// always block, with the PC datapath and the instruction datapath split into
+// their own always blocks (previously all in one block).  Behaviour is
+// unchanged: the two course packages are byte-identical and this refactor was
+// re-verified cycle-exactly against exp15 (xsim n1~n58, same $finish time).
 // ============================================================================
 module mycpu_top(
     input  wire        aclk,
@@ -143,20 +145,13 @@ always @(posedge clk) begin
     if (reset) begin
         if_fetch_busy    <= 1'b0;
         if_fetch_discard <= 1'b0;
-        if_fetch_pc      <= 32'h1c000000;
         if_req_valid     <= 1'b0;
-        if_req_pc        <= 32'h1c000000;
-        if_req_inst      <= 32'b0;
-        npc              <= 32'h1c000000;
         if_valid         <= 1'b0;
-        if_pc            <= 32'h1c000000;
-        if_inst          <= 32'b0;
     end
     else begin
         // request accepted by the slave
         if (if_fetch_accept) begin
             if_fetch_busy    <= 1'b1;
-            if_fetch_pc      <= npc;
             if_fetch_discard <= 1'b0;
         end
         // response returned (its queue write may be overridden below by a
@@ -168,8 +163,6 @@ always @(posedge clk) begin
             end
             else begin
                 if_req_valid <= 1'b1;
-                if_req_pc    <= if_fetch_pc;
-                if_req_inst  <= inst_sram_rdata;
             end
         end
         // redirect commits: IF/queue hold only wrong-path instructions
@@ -177,7 +170,6 @@ always @(posedge clk) begin
             if_valid         <= 1'b0;
             if_req_valid     <= 1'b0;
             if_fetch_discard <= if_fetch_busy && !if_fetch_dataok;
-            npc              <= redirect_target;
         end
         // IF behaves like a normal pipeline stage: whenever the current
         // instruction is accepted downstream (if_allowin) it leaves IF and
@@ -185,16 +177,40 @@ always @(posedge clk) begin
         // word is never re-presented to ID while fetch is still waiting.
         if (if_allowin) begin
             if_valid <= if_word_to_if;
-            if (if_word_to_if) begin
-                if_pc   <= if_req_pc;
-                if_inst <= if_req_inst;
-            end
         end
         // completed word consumed by IF; next fetch address = pc + 4
         if (if_transfer) begin
             if_req_valid <= 1'b0;
-            npc          <= if_req_pc + 32'h4;
         end
+    end
+end
+
+// ---- fetch PC datapath (split out from the control block above) ----
+always @(posedge clk) begin
+    if (reset) begin
+        if_fetch_pc <= 32'h1c000000;
+        if_req_pc   <= 32'h1c000000;
+        npc         <= 32'h1c000000;
+        if_pc       <= 32'h1c000000;
+    end
+    else begin
+        if (if_fetch_accept) if_fetch_pc <= npc;
+        if (if_fetch_dataok && !if_fetch_discard) if_req_pc <= if_fetch_pc;
+        if (redirect_flush)  npc <= redirect_target;
+        if (if_allowin && if_word_to_if) if_pc <= if_req_pc;
+        if (if_transfer)     npc <= if_req_pc + 32'h4;
+    end
+end
+
+// ---- fetch instruction datapath (split out from the control block above) ----
+always @(posedge clk) begin
+    if (reset) begin
+        if_req_inst <= 32'b0;
+        if_inst     <= 32'b0;
+    end
+    else begin
+        if (if_fetch_dataok && !if_fetch_discard) if_req_inst <= inst_sram_rdata;
+        if (if_allowin && if_word_to_if)          if_inst     <= if_req_inst;
     end
 end
 

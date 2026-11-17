@@ -42,7 +42,7 @@ C:\course_files\2026_autumn\
 | exp13.zip | exp13 | 更多例外（TEST5） | n1~n58 | prj4/exp13 | ✅ 课程包 xsim 复验 n1~n58 PASS（2026-10-14；修复 ECFG bit10 后重跑，见 §十六）；**2026-10-26 bit 重出（WNS 0.081 ns）、提交包 `patch/prj4_exp13_3.zip`（见 §二十）** |
 | exp14.zip | exp14 | 类 SRAM 握手接口 | n1~n58 | prj5/exp14 | ✅ 课程包复验 n1~n58 PASS（9946285 → **9834235 ns**，流水化除法版，2026-11-02）；bit 重出（**WNS +0.006**）；提交包 `patch/prj5_exp14_3.zip`（见 §二十二） |
 | exp15.zip | exp15 | 类 SRAM→AXI4 转接桥 | n1~n58 | prj5/exp15 | ✅ **2026-11-10 按 exp14 基线重做**（单 AXI4 主口，保留 `divider`/18 位 `alu_op`）；14→15 patch 12461 B 闭环；**2026-11-17 xsim 复验 n1~n58 PASS（7733045 ns）**、bit 重出（WNS +0.223）、验收通过；旧版 7870555 ns 为 11-02 超前版记录（作废，见 §二十六） |
-| exp16.zip | exp16 | AXI 接口（与 exp15 同包） | n1~n58 | prj5/exp16 | ✅ **RTL 承接 exp15**（两课程包逐字节相同、无功能增量；15→16 patch 769 B 仅注释）；**2026-11-17 xsim 复验 n1~n58 PASS（7733045 ns）**、bit 重出（**WNS +0.223**）；提交包 `patch/prj5_exp16_3.zip`；与 exp15 合并验收 |
+| exp16.zip | exp16 | AXI 接口（与 exp15 同包） | n1~n58 | prj5/exp16 | ✅ **RTL 承接 exp15**（两课程包逐字节相同）；另按助教意见做 fetch 结构整理（15→16 patch **4149 B**：注释 + 请求/发起控制合块、pc/inst 拆块，纯等价）；**2026-11-17 xsim 复验 n1~n58 PASS（7733045 ns）**、bit 重出（WNS 见 §二十六）、上板跑通；提交包 `patch/prj5_exp16_3.zip`；与 exp15 合并验收 |
 
 报告归属（课程 PPT 的 6 份报告清单，见 §九）：
 
@@ -386,11 +386,18 @@ C:\course_files\2026_autumn\
 | 优化 | 状态 | 落在哪里 |
 |---|---|---|
 | exp9 前递 hit-first | 课后实验，未进 exp9/exp10 patch；报告不写 | 无（工作副本已还原为验收版） |
-| exp11 结构清理（divider 模块、`alu_op` 18、去重） | 课后完成；未进 exp10/11、exp12/13 patch；**已在 exp14 补入** | exp13→exp14 patch / exp14 提交包 |
+| exp11 结构清理（divider 模块、`alu_op` 18、去重） | **exp11 验收后助教建议加**，当时准备加；但 exp12/13 由组内同学完成、没加上；**到 exp14 才补入**（提交基线里 11/12/13 均无） | exp13→exp14 patch / exp14 提交包 |
 | exp11 除法 clz 对齐迭代 | **已在 exp14 落地（流水化 SHIFT/LOAD/ITER）**；仿真 -1.1% | exp13→exp14 patch / exp14 包 |
 | exp14 类 SRAM 握手 + 清理 + 流水化除法 | 已进 13→14 patch、bit、包（WNS +0.006） | prj5/exp14 |
-| exp15/16 结构补齐 | **exp15 已完成（2026-11-10，远程 agent 重做为单 AXI4 主口，保留 exp14 的 `divider`/18 位 `alu_op`）；exp16 承接 exp15，无功能增量** | `prj5/exp15/patch/exp14_to_exp15.patch`（12461 B）/ exp15；`prj5/exp16/patch/exp15_to_exp16.patch`（769 B，仅注释）/ exp16 |
-| exp15/16 AXI 功能 | **新版 RTL 已用 Vivado xsim 复验 n1~n58 PASS（2026-11-17，7733045 ns，两版逐点一致）**；exp15 验收通过、exp16 与 exp15 合并验收；11-02 的 7870555 ns 与 09-04 的 bit 属超前版，**作废** | `prj5/logs/exp15_xsim_20261117.log`、`exp16_xsim_20261117.log`；提交包 `prj5_exp15_3.zip` / `prj5_exp16_3.zip` |
+| exp15/16 结构补齐 | **exp15 已完成（2026-11-10，远程 agent 重做为单 AXI4 主口，保留 exp14 的 `divider`/18 位 `alu_op`）；exp16 承接 exp15，并补做助教提的 fetch 结构整理** | `prj5/exp15/patch/exp14_to_exp15.patch`（12461 B）/ exp15；`prj5/exp16/patch/exp15_to_exp16.patch`（4149 B：注释 + fetch 控制/pc/inst 分块）/ exp16 |
+| exp15/16 AXI 功能 | **新版 RTL 已用 Vivado xsim 复验 n1~n58 PASS（2026-11-17，7733045 ns，两版逐点一致）**；**exp15、exp16 两版上板均跑通（2026-11-17）**；11-02 的 7870555 ns 与 09-04 的 bit 属超前版，**作废** | `prj5/logs/exp15_xsim_20261117.log`、`exp16_xsim_20261117.log`；提交包 `prj5_exp15_3.zip` / `prj5_exp16_3.zip` |
+
+- **助教在 exp14 验收后提的四点（2026-11-17 补记）**：
+  1. 请求和发起重新定义、合成一个 always 块；
+  2. 信号与 `pc`、`inst` 拆开；
+  3. “exp11 完的优化版本没进 exp12/13”；
+  4. “15 里加上优化”。
+  其中 **③④ 经核对 exp14 实际已包含**（当时以为漏加了，其实没漏），如实保留现状即可，忽略。**①② 只在 exp16 落地**（exp15 的 patch 已提交、不能改）：fetch 的请求/发起/响应/冲刷控制合成一个 always 块，PC 数据通路与 instruction 数据通路各拆一个独立 always 块；重跑 xsim **n1~n58 PASS、最后测试点 7733045 ns、`$finish` 7735215 ns，与 exp15 逐点一致**——纯结构等价改写，行为不变。
 
 - **当前待办**：`reports/prj5/04_*.md` 验证表仍是 11-02 旧版数字，待按新 RTL 重写；其余事项均已闭合。
 - exp10 没有单独 patch 是提交方式决定的（exp10/11 合并提交，patch 相对 exp9），不算缺口。
@@ -403,14 +410,14 @@ C:\course_files\2026_autumn\
 - **全链重建（2026-11-17 复核）**：从 `prj1/exp6/ref_sc` 起**只用 patch** 依次 `6→7→8→9→（10+11 合并）→12→13→14→15→16`，每一步都与目标版四文件逐字节一致，最终等于 `prj5/exp16/myCPU`——链上无缺口。exp10 只是记录分支（`exp9_to_exp10.patch` 能闭环但未进提交链）。
 - **exp15 bit（11-10 17:36~17:57）**：工程 `C:\vivado_prj\exp15_g`（`build_all.tcl`：综合 → 实现 → 布线后 `phys_opt_design -directive Explore` → 重写 bit）。布线后 **WNS +0.223 / TNS 0.000 / WHS +0.025 ns**，约束全满足；bit `soc_verify/soc_axi/run_vivado/soc_lite_top.bit`（9 730 761 B）。
 - **验收（11-17）**：exp15 **通过**；课程口径 exp15/exp16 **合并验收**。
-- **exp16 承接（11-17）**：`prj5/exp16/myCPU` 改为 exp15 的 RTL（四文件逐字节相同），仅在 `mycpu_top.v` 头部加一段注释说明“exp16 相对 exp15 无功能增量（两课程包逐字节相同：同 soc_axi SoC、同 n1~n58 测试）”；`prj5/exp16/patch/exp15_to_exp16.patch`（769 B，仅注释）闭环复验逐字节一致；bit 在 `C:\vivado_prj\exp16_g` 重出（`build_all.tcl` 同 exp15）：**WNS +0.223 / TNS 0.000 / WHS +0.025 ns**，约束全满足（与 exp15 同值），bit 9 730 761 B，日志 `prj5/logs/exp16_vivado_20261117.log`；提交包 `patch/prj5_exp16_3.zip`（`prj5_3/{myCPU, patch/mycpu_exp16_vs_exp15.patch, soc_lite_top.bit}`），exp15 包同结构 `patch/prj5_exp15_3.zip`。
-- **验证（新版口径，2026-11-17，Vivado xsim）**：exp15、exp16 各跑一遍课程包 `soc_axi` 测试台（行为级 `axi_crossbar_1x2.v` / `axi_ram.v`，`SIMU_USE_PLL=0`，tb 传 `SIMULATION=1`，故不例化 PLL）：两版均 **n1~n58 全 PASS**，最后测试点 **7733045 ns**、`$finish` 7735215 ns（两版逐点一致）。日志 `prj5/logs/exp15_xsim_20261117.log`、`exp16_xsim_20261117.log`。综合/实现两次也都是新版 RTL（工程内 myCPU 四文件与工作区逐字节一致）：WNS +0.223 / TNS 0.000 / WHS +0.025。
+- **exp16 承接 + 结构整理（11-17）**：`prj5/exp16/myCPU` 先承接 exp15 的 RTL（四文件逐字节相同），再按助教在 exp14 验收后提的 ①② 做**纯结构改写**（详见 §二十五）：fetch 的**请求/发起/响应/冲刷控制合成一个 always 块**，**PC 数据通路与 instruction 数据通路各拆一个独立 always 块**（原先把控制与 pc/inst 全挤在一个块里）。`prj5/exp16/patch/exp15_to_exp16.patch` 重制为 **4149 B（`mycpu_top.v`，+36/−15）**，闭环复验逐字节一致。行为不变：重跑 xsim **n1~n58 PASS、最后测试点 7733045 ns、`$finish` 7735215 ns，与 exp15 逐点一致**（日志 `prj5/logs/exp16_xsim_20261117_refactor.log`）。bit 在 `C:\vivado_prj\exp16_g` 重出（`build_all.tcl` 同 exp15）：布线后 **WNS +0.083 / TNS 0.000 / WHS +0.037 ns**，约束全满足，bit 9 730 761 B，日志 `prj5/logs/exp16_vivado_20261117_refactor.log`；提交包 `patch/prj5_exp16_3.zip` 已按新 RTL/patch/bit 重打（673 195 B）；exp15 包 `patch/prj5_exp15_3.zip` 不动。
+- **验证（新版口径，2026-11-17，Vivado xsim）**：exp15、exp16 各跑一遍课程包 `soc_axi` 测试台（行为级 `axi_crossbar_1x2.v` / `axi_ram.v`，`SIMU_USE_PLL=0`，tb 传 `SIMULATION=1`，故不例化 PLL）：两版均 **n1~n58 全 PASS**，最后测试点 **7733045 ns**、`$finish` 7735215 ns（两版逐点一致）；exp16 结构改写后又单独复跑一次，仍是同两点同一时刻。日志 `prj5/logs/exp15_xsim_20261117.log`、`exp16_xsim_20261117.log`、`exp16_xsim_20261117_refactor.log`。综合/实现：exp15 WNS +0.223 / WHS +0.025，exp16（改写后）WNS +0.083 / WHS +0.037，均 0 失败端点、约束满足。
 - **超前版作废（用户 2026-11-17 口径）**：超前版的综合与上板记录一律无效——**2026-09-04 的 `C:\vivado_prj\exp15`、`exp16` 两套 bit，以及 11-02 的 iverilog PASS（7870555 ns）都不能当验证依据**；只有 11-10 的 `exp15_g` 与 11-17 的 `exp16_g` 这一轮算数。
 - **提交包**：`patch/prj5_exp15_3.zip`、`patch/prj5_exp16_3.zip`（结构同前，含对应新版 bit）。
 - **工作规矩重申（用户 2026-11-17 口径）**：以后每个实验一律从**上一实验的代码**往后改（适配、优化），不得从超前实验包整包抄；exp16 即按此执行（从 exp15 承接，而不是从资料库超前版重来）。
 ## 二十七、2026-11-17：实验规矩定死（patch 唯一基线、禁止抄超前包）
 
-1. **patch = 唯一历史基线**：prjN/expM/patch/*.patch 的内容就是该实验相对上一实验的全部改动，**一字不改**；exp15 及之前已提交的 patch 全部冻结，今后核对一律以 patch 为准，不以任何旧副本/旧工程为准。15→16 是唯一还可改的一条（目前只加注释：两课程包逐字节相同、无功能增量）。
+1. **patch = 唯一历史基线**：prjN/expM/patch/*.patch 的内容就是该实验相对上一实验的全部改动，**一字不改**；exp15 及之前已提交的 patch 全部冻结，今后核对一律以 patch 为准，不以任何旧副本/旧工程为准。15→16 是唯一还可改的一条（现为：注释 + fetch 请求/发起控制合块、pc/inst 数据通路拆块，4149 B）。
 2. **禁止整包抄超前实验**：每个实验必须从**上一个实验的验收代码**（= 已提交 patch 应用后的结果）出发，理解后修改、适配、优化；资料库\prj3_7_超前实验_未发布 等超前包只作参考，**不得整包替换**。
 3. **先跑通、再优化**：每个实验先把功能仿真跑到全 PASS（Vivado xsim 为准）再谈优化；优化必须做逐点/逐拍等价复验 + 综合时序达标才算落地，没落地的只能写成“评估”。
 4. **废弃版本不留副本**：被否决的实现（如 clz 单拍组合版）不得留在工作树或工程树里被误当基线；失败记录只保留日志。
