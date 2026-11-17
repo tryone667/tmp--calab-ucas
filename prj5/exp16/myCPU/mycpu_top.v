@@ -1,11 +1,11 @@
 // ============================================================================
 // 5-stage pipeline CPU (IF -> ID -> EX -> MEM -> WB) with a single shared
-// AXI4 master port (exp15/16: soc_axi).  Same pipeline / instruction set /
-// exception / CSR behaviour as the verified exp14 core; only the memory
-// interface is changed:
-//  - the pipeline drives "virtual" SRAM-style handshakes (inst_sram_*,
-//    data_sram_*), translated at the bottom of this file into single-beat
-//    AXI4 transactions (len = 0, INCR burst)
+// AXI4 master port (exp15/16: soc_axi).  Instruction set / exception / CSR
+// behaviour are those of the verified exp14 core, and the exp14 structural
+// work is kept:
+//  - divider: standalone `divider` module (pipelined clz fast path + aligned
+//    iteration), instantiated once in EX; div/mod never enter the ALU cone,
+//    so `alu_op` stays 18 bits wide
 //  - instruction fetch: serialized single-outstanding reads; completed words
 //    queue (depth 1) into the IF stage; redirects flush the queue and discard
 //    an in-flight response when it finally arrives
@@ -14,6 +14,14 @@
 //    memory ops always finish before younger ones issue
 //  - EX data requests are arbitrated ahead of IF fetches and only one AXI
 //    transaction is in flight at a time
+//  - the pipeline drives "virtual" SRAM-style handshakes (inst_sram_*,
+//    data_sram_*), translated at the bottom of this file into single-beat
+//    AXI4 transactions (len = 0, INCR burst)
+//
+// exp16: no functional delta from exp15.  The exp15 and exp16 course packages
+// are byte-identical (same soc_axi SoC, same n1~n58 tests), so this core is
+// exp15's RTL carried forward unchanged; only this note differs.  The pair is
+// accepted together on the one shared AXI4 master.
 // ============================================================================
 module mycpu_top(
     input  wire        aclk,
@@ -271,7 +279,7 @@ wire        need_si20;
 wire        need_si26;
 wire        src2_is_4;
 
-wire [21:0] alu_op;
+wire [17:0] alu_op;
 wire        src1_is_pc;
 wire        src2_is_imm;
 wire        res_from_mem;
@@ -394,10 +402,6 @@ assign alu_op[14] = inst_sra_w;
 assign alu_op[15] = inst_mul_w;
 assign alu_op[16] = inst_mulh_w;
 assign alu_op[17] = inst_mulh_wu;
-assign alu_op[18] = inst_div_w;
-assign alu_op[19] = inst_mod_w;
-assign alu_op[20] = inst_div_wu;
-assign alu_op[21] = inst_mod_wu;
 
 // any instruction the core decodes as valid (used for INE detection)
 wire inst_any = |{inst_add_w,  inst_sub_w,  inst_slt,     inst_sltu,
@@ -574,7 +578,6 @@ assign br_target = (inst_beq || inst_bne || inst_blt || inst_bge
 // ---- data hazard: stall while EX holds a result ID needs ----
 //  1) EX load (data not back yet)
 //  2) EX div/mod (multi-cycle, result valid only after it leaves EX)
-wire ex_alu_is_div = |ex_alu_op[21:18];
 wire id_stall = if_valid && ex_valid && ex_gr_we && (ex_dest != 5'b0)
              && (ex_res_from_mem || ex_alu_is_div)
              && ( (id_uses_rj  && (ex_dest == rj))
@@ -785,7 +788,7 @@ end
 // =============================== EX stage ================================
 reg         ex_valid;
 reg  [31:0] ex_pc;
-reg  [21:0] ex_alu_op;
+reg  [17:0] ex_alu_op;
 reg  [31:0] ex_alu_src1;
 reg  [31:0] ex_alu_src2;
 reg  [31:0] ex_rkd_value;   // store data
@@ -793,77 +796,25 @@ reg         ex_gr_we;
 reg  [3:0]  ex_ls_type;     // load/store type
 reg         ex_res_from_mem;
 reg  [ 4:0] ex_dest;
+reg         ex_alu_is_div;  // instruction in EX is div/mod
 
-// ---- multi-cycle divider state (div/mod instructions) ----
-reg         ex_div_busy;
-reg         ex_div_unsigned;
-reg         ex_div_mod;
-reg         ex_div_q_neg;
-reg         ex_div_r_neg;
-reg  [63:0] ex_div_acc;
-reg  [31:0] ex_div_babs;
-reg  [ 4:0] ex_div_step;
-reg  [31:0] ex_div_q;
-reg  [31:0] ex_div_r;
+// ---- multi-cycle divider unit (div/mod instructions) ----
+wire        id_alu_is_div = inst_div_w | inst_div_wu | inst_mod_w | inst_mod_wu;
+wire        ex_div_start  = id_to_ex_valid && ex_allowin && id_alu_is_div;
+wire        ex_div_busy;
+wire [31:0] ex_div_result;
 
-wire id_is_divmod = inst_div_w | inst_mod_w | inst_div_wu | inst_mod_wu;
-wire ex_accept_div = id_to_ex_valid && ex_allowin && id_is_divmod;
-
-wire [31:0] div_rem_n = {ex_div_acc[62:32], ex_div_acc[31]};
-wire [31:0] div_q_n   = {ex_div_acc[30: 0], 1'b0};
-wire        div_ge    = (ex_div_babs != 32'd0) && (div_rem_n >= ex_div_babs);
-wire [63:0] div_acc_n = div_ge ? {div_rem_n - ex_div_babs, div_q_n | 32'd1}
-                               : {div_rem_n, div_q_n};
-
-always @(posedge clk) begin
-    if (reset) begin
-        ex_div_busy     <= 1'b0;
-        ex_div_unsigned <= 1'b0;
-        ex_div_mod      <= 1'b0;
-        ex_div_q_neg    <= 1'b0;
-        ex_div_r_neg    <= 1'b0;
-        ex_div_acc      <= 64'b0;
-        ex_div_babs     <= 32'b0;
-        ex_div_step     <= 5'd0;
-        ex_div_q        <= 32'b0;
-        ex_div_r        <= 32'b0;
-    end
-    else if (ex_accept_div) begin
-        ex_div_busy     <= 1'b1;
-        ex_div_step     <= 5'd0;
-        ex_div_unsigned <= inst_div_wu | inst_mod_wu;
-        ex_div_mod      <= inst_mod_w | inst_mod_wu;
-        ex_div_q_neg    <= inst_div_w && (id_rj_value[31] ^ id_rkd_value[31]);
-        ex_div_r_neg    <= inst_mod_w && id_rj_value[31];
-        if (inst_div_wu || inst_mod_wu) begin
-            ex_div_acc  <= {32'd0, id_rj_value};
-            ex_div_babs <= id_rkd_value;
-        end
-        else begin
-            ex_div_acc  <= {32'd0, id_rj_value[31] ? (~id_rj_value + 32'd1) : id_rj_value};
-            ex_div_babs <= id_rkd_value[31] ? (~id_rkd_value + 32'd1) : id_rkd_value;
-        end
-    end
-    else if (ex_div_busy) begin
-        if (ex_div_step == 5'd31) begin
-            ex_div_busy <= 1'b0;
-            if (ex_div_unsigned) begin
-                ex_div_q <= div_acc_n[31: 0];
-                ex_div_r <= div_acc_n[63:32];
-            end
-            else begin
-                ex_div_q <= ex_div_q_neg ? (~div_acc_n[31: 0] + 32'd1)
-                                         : div_acc_n[31: 0];
-                ex_div_r <= ex_div_r_neg ? (~div_acc_n[63:32] + 32'd1)
-                                         : div_acc_n[63:32];
-            end
-        end
-        else begin
-            ex_div_step <= ex_div_step + 1'b1;
-            ex_div_acc  <= div_acc_n;
-        end
-    end
-end
+divider u_divider(
+    .clk    (clk                       ),
+    .reset  (reset                     ),
+    .start  (ex_div_start              ),
+    .unsign (inst_div_wu | inst_mod_wu ),
+    .mod    (inst_mod_w  | inst_mod_wu ),
+    .a      (id_rj_value               ),
+    .b      (id_rkd_value              ),
+    .busy   (ex_div_busy               ),
+    .result (ex_div_result             )
+    );
 
 // ---- data memory transaction controller (SRAM handshake) ----
 // A memory instruction stays in EX until its transaction finishes:
@@ -937,7 +888,7 @@ end
 always @(posedge clk) begin
     if (reset) begin
         ex_pc <= 32'b0;
-        ex_alu_op <= 22'b0;
+        ex_alu_op <= 18'b0;
         ex_alu_src1 <= 32'b0;
         ex_alu_src2 <= 32'b0;
         ex_rkd_value <= 32'b0;
@@ -945,6 +896,7 @@ always @(posedge clk) begin
         ex_ls_type <= 4'd0;
         ex_res_from_mem <= 1'b0;
         ex_dest <= 5'b0;
+        ex_alu_is_div <= 1'b0;
     end
     else if (id_to_ex_valid && ex_allowin && !id_excp_req) begin
         ex_pc <= if_pc;
@@ -962,6 +914,7 @@ always @(posedge clk) begin
         ex_ls_type <= id_ls_type;
         ex_res_from_mem <= res_from_mem;
         ex_dest <= dest;
+        ex_alu_is_div <= id_alu_is_div;
     end
 end
 
@@ -974,8 +927,7 @@ alu u_alu(
     );
 
 // div/mod result is produced by the multi-cycle divider in EX
-assign ex_alu_result = ex_alu_is_div ? (ex_div_mod ? ex_div_r : ex_div_q)
-                                     : ex_alu_result_raw;
+assign ex_alu_result = ex_alu_is_div ? ex_div_result : ex_alu_result_raw;
 
 // =============================== MEM stage ===============================
 reg         mem_valid;
@@ -1226,4 +1178,143 @@ assign data_sram_addr_ok = (rd_ar_ok && arready && !rd_is_if) ||
 assign data_sram_data_ok = (rd_r_wait && rvalid && rlast && !rd_is_if) ||
                            (wr_b_wait && bvalid);
 assign data_sram_rdata   = rdata;
+endmodule
+
+
+// ---------------------------------------------------------------------------
+// Multi-cycle divider with a pipelined fast path.
+//   start -> [fast? result now] : latch magnitudes, sign flags
+//         -> SHIFT : clz(b)-clz(a)              (priority encoders only)
+//         -> LOAD  : dal = b<<shift, qbit=1<<shift
+//         -> ITER  : one quotient bit per cycle
+// Splitting clz and the variable shifter into separate cycles keeps the
+// combinational cone short enough for 50 MHz while still finishing most
+// divisions in a handful of cycles.
+// ---------------------------------------------------------------------------
+module divider(
+    input  wire        clk,
+    input  wire        reset,
+    input  wire        start,
+    input  wire        unsign,
+    input  wire        mod,
+    input  wire [31:0] a,
+    input  wire [31:0] b,
+    output wire        busy,
+    output wire [31:0] result
+);
+
+localparam [1:0] ST_SHIFT = 2'd1;
+localparam [1:0] ST_LOAD  = 2'd2;
+localparam [1:0] ST_ITER  = 2'd3;
+
+reg         busy_r;
+reg  [1:0]  state;
+reg         unsigned_r;
+reg         mod_r;
+reg         q_neg;
+reg         r_neg;
+reg  [31:0] a_mag_r;
+reg  [31:0] b_mag_r;
+reg  [5:0]  shift_r;
+reg  [31:0] rem;
+reg  [31:0] dal;
+reg  [31:0] qbit;
+reg  [31:0] quot;
+reg  [31:0] q;
+reg  [31:0] r;
+
+assign busy   = busy_r;
+assign result = mod_r ? r : q;
+
+function [5:0] clz32;
+    input [31:0] x;
+    integer i;
+    begin
+        clz32 = 6'd32;
+        for (i = 31; i >= 0; i = i - 1)
+            if (x[i] && clz32 == 6'd32) clz32 = 6'd31 - i;
+    end
+endfunction
+
+wire [31:0] a_mag = unsign ? a : (a[31] ? (~a + 32'd1) : a);
+wire [31:0] b_mag = unsign ? b : (b[31] ? (~b + 32'd1) : b);
+wire        fast  = (b_mag == 32'd0) || (a_mag == 32'd0) || (a_mag < b_mag);
+wire        q_neg_new = ~unsign && (a[31] ^ b[31]);
+wire        r_neg_new = ~unsign &&  a[31];
+
+wire        ge     = (rem >= dal);
+wire [31:0] rem_n  = ge ? (rem - dal) : rem;
+wire [31:0] quot_n = ge ? (quot | qbit) : quot;
+
+always @(posedge clk) begin
+    if (reset) begin
+        busy_r     <= 1'b0;
+        state      <= 2'd0;
+        unsigned_r <= 1'b0;
+        mod_r      <= 1'b0;
+        q_neg      <= 1'b0;
+        r_neg      <= 1'b0;
+        a_mag_r    <= 32'b0;
+        b_mag_r    <= 32'b0;
+        shift_r    <= 6'd0;
+        rem        <= 32'b0;
+        dal        <= 32'b0;
+        qbit       <= 32'b0;
+        quot       <= 32'b0;
+        q          <= 32'b0;
+        r          <= 32'b0;
+    end
+    else if (start) begin
+        unsigned_r <= unsign;
+        mod_r      <= mod;
+        q_neg      <= q_neg_new;
+        r_neg      <= r_neg_new;
+        a_mag_r    <= a_mag;
+        b_mag_r    <= b_mag;
+        rem        <= a_mag;
+        quot       <= 32'b0;
+        q          <= 32'b0;
+        r          <= r_neg_new ? (~a_mag + 32'd1) : a_mag;
+        if (fast) begin
+            busy_r <= 1'b0;          // result is valid next cycle
+            state  <= 2'd0;
+        end
+        else begin
+            busy_r <= 1'b1;
+            state  <= ST_SHIFT;
+        end
+    end
+    else begin
+        case (state)
+            ST_SHIFT: begin
+                shift_r <= clz32(b_mag_r) - clz32(a_mag_r);
+                state   <= ST_LOAD;
+            end
+            ST_LOAD: begin
+                dal   <= b_mag_r << shift_r;
+                qbit  <= 32'd1 << shift_r;
+                state <= ST_ITER;
+            end
+            ST_ITER: begin
+                rem  <= rem_n;
+                quot <= quot_n;
+                if (qbit == 32'd1) begin
+                    busy_r <= 1'b0;
+                    state  <= 2'd0;
+                    q <= q_neg ? (~quot_n + 32'd1) : quot_n;
+                    r <= r_neg ? (~rem_n  + 32'd1) : rem_n;
+                end
+                else begin
+                    dal  <= dal  >> 1;
+                    qbit <= qbit >> 1;
+                end
+            end
+            default: begin
+                busy_r <= 1'b0;
+                state  <= 2'd0;
+            end
+        endcase
+    end
+end
+
 endmodule

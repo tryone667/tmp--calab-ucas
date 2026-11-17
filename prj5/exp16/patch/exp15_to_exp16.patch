@@ -1,0 +1,16 @@
+diff --git a/myCPU/mycpu_top.v b/myCPU/mycpu_top.v
+index 1c39f53..a98d5e6 100644
+--- a/myCPU/mycpu_top.v
++++ b/myCPU/mycpu_top.v
+@@ -17,6 +17,11 @@
+ //  - the pipeline drives "virtual" SRAM-style handshakes (inst_sram_*,
+ //    data_sram_*), translated at the bottom of this file into single-beat
+ //    AXI4 transactions (len = 0, INCR burst)
++//
++// exp16: no functional delta from exp15.  The exp15 and exp16 course packages
++// are byte-identical (same soc_axi SoC, same n1~n58 tests), so this core is
++// exp15's RTL carried forward unchanged; only this note differs.  The pair is
++// accepted together on the one shared AXI4 master.
+ // ============================================================================
+ module mycpu_top(
+     input  wire        aclk,
